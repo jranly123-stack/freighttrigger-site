@@ -19,14 +19,36 @@ Use `.env.example` as the template for local credentials.
 - `SAM_GOV_API_KEY` - public procurement opportunity source.
 - `GOOGLE_CLIENT_ID` - Gmail API OAuth client ID.
 - `GOOGLE_CLIENT_SECRET` - Gmail API OAuth client secret.
+- `GOOGLE_REDIRECT_URI` - local OAuth callback URL. Default: `http://localhost:8765/oauth2callback`.
+- `GMAIL_REFRESH_TOKEN` - long-lived Gmail OAuth token created by the local setup helper.
 
 ## Later Variables
 
-These are not required for the current static site, but will be needed when Stripe or Gmail automation is built into an app:
+These are not required for the current static site, but will be needed when Stripe automation is built into an app:
 
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
-- `GOOGLE_REDIRECT_URI`
+
+## Gmail OAuth Setup
+
+Gmail automation requires one account-owner browser approval. After that, the engine can refresh access in the background.
+
+1. In Google Cloud, make sure the Gmail API is enabled.
+2. In the OAuth client settings, add this authorized redirect URI:
+
+   `http://localhost:8765/oauth2callback`
+
+3. Run:
+
+   `python3 scripts/gmail_oauth_setup.py`
+
+4. Approve the consent screen for `signals@getfreighttrigger.com`.
+5. The script writes `GMAIL_REFRESH_TOKEN` into `.env`.
+6. Verify with:
+
+   `python3 scripts/gmail_smoke_test.py`
+
+Do not paste the refresh token into chat. It is equivalent to long-lived inbox access.
 
 ## Current Boundary
 

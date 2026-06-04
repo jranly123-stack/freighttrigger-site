@@ -9,3 +9,7 @@ run_outputs/
 __pycache__/
 scripts/__pycache__/
 freighttrigger-site 2/
+internal-dashboard/.env.local
+internal-dashboard/.next/
+internal-dashboard/node_modules/
+internal-dashboard/tsconfig.tsbuildinfo
