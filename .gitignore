@@ -2,3 +2,6 @@
 *.zip
 freighttrigger-site/
 reports/
+.env
+.env.*
+!.env.example
