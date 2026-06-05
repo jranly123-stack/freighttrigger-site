@@ -14,7 +14,7 @@ export function inBusinessWindow(now = new Date()) {
   const weekday = String(parts.weekday);
   const hour = Number(parts.hour);
   const minute = Number(parts.minute);
-  const dayOk = ["Tue", "Wed", "Thu", "Fri"].includes(weekday);
+  const dayOk = ["Mon", "Tue", "Wed", "Thu", "Fri"].includes(weekday);
   const minutes = hour * 60 + minute;
   return dayOk && minutes >= 9 * 60 + 30 && minutes <= 15 * 60 + 30;
 }
