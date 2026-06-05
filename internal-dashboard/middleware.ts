@@ -25,6 +25,17 @@ function parseBasicAuth(header: string) {
 }
 
 export function middleware(request: NextRequest) {
+  if (request.nextUrl.pathname.startsWith("/api/cron/")) {
+    const cronSecret = process.env.CRON_SECRET;
+    if (
+      cronSecret &&
+      request.headers.get("authorization") === `Bearer ${cronSecret}`
+    ) {
+      return NextResponse.next();
+    }
+    return new NextResponse("Cron authorization required.", { status: 401 });
+  }
+
   const requiredPassword = process.env.INTERNAL_DASHBOARD_PASSWORD;
   const requiredUser = process.env.INTERNAL_DASHBOARD_USER || "freighttrigger";
 

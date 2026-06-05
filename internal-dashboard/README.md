@@ -39,8 +39,10 @@ Also add internal dashboard protection:
 
 - `INTERNAL_DASHBOARD_USER`
 - `INTERNAL_DASHBOARD_PASSWORD`
+- `CRON_SECRET`
 
 If `INTERNAL_DASHBOARD_PASSWORD` is missing in production, the dashboard returns `503` instead of exposing internal data.
+If `CRON_SECRET` is missing, scheduled engine routes will reject automation calls.
 
 Suggested internal domain:
 
@@ -51,3 +53,11 @@ Suggested internal domain:
 This dashboard runs the engine and reviews signals. It is not customer-facing yet.
 
 Beta clients should receive polished report/feed deliverables, not access to this operator dashboard.
+
+## Scheduled Engine
+
+The first cron job runs daily:
+
+`/api/cron/signal-scan`
+
+It scans public sources, classifies candidates, and writes only review-state candidates into Airtable. It does not send outbound, publish reports, or claim verified buyer intent.

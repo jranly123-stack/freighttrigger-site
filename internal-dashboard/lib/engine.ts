@@ -14,7 +14,7 @@ const NOISE_DOMAINS = [
   "glassdoor.com"
 ];
 
-type Candidate = {
+export type Candidate = {
   company?: string;
   trigger_summary?: string;
   likely_freight_need?: string;

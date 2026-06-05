@@ -1,4 +1,5 @@
 import { requireEnv } from "./local-env";
+import type { Candidate } from "./engine";
 
 type AirtableRecord = {
   id: string;
@@ -46,6 +47,103 @@ export async function listRecords(table: string, maxRecords = 100) {
   const url = `${baseUrl(table)}?pageSize=${Math.min(maxRecords, 100)}`;
   const data = await airtableFetch<{ records: AirtableRecord[] }>(url);
   return data.records ?? [];
+}
+
+async function createRecords(table: string, records: Array<Record<string, unknown>>) {
+  if (!records.length) return [];
+  const created: AirtableRecord[] = [];
+
+  for (let index = 0; index < records.length; index += 10) {
+    const batch = records.slice(index, index + 10);
+    const data = await airtableFetch<{ records: AirtableRecord[] }>(baseUrl(table), {
+      method: "POST",
+      body: JSON.stringify({
+        records: batch.map((fields) => ({ fields }))
+      })
+    });
+    created.push(...(data.records ?? []));
+  }
+
+  return created;
+}
+
+function scoreValue(value: unknown) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 0;
+  return Math.max(0, Math.min(100, Math.round(number)));
+}
+
+function candidateKey(candidate: Candidate) {
+  return String(candidate.source_url || "").trim().toLowerCase();
+}
+
+export async function createReviewCandidates(candidates: Candidate[]) {
+  const existingSignals = await listRecords("Signals", 100);
+  const existingUrls = new Set(
+    existingSignals
+      .map((record) => String(record.fields["Evidence URL"] || "").trim().toLowerCase())
+      .filter(Boolean)
+  );
+
+  const reviewCandidates = candidates
+    .filter((candidate) => candidate.include !== false)
+    .filter((candidate) => candidateKey(candidate))
+    .filter((candidate) => !existingUrls.has(candidateKey(candidate)))
+    .filter(
+      (candidate) =>
+        scoreValue(candidate.urgency_score) >= 70 &&
+        scoreValue(candidate.confidence_score) >= 65
+    )
+    .slice(0, 10);
+
+  const companyRecords = reviewCandidates.map((candidate) => ({
+    "Company Name": String(candidate.company || "Unknown account"),
+    "Website": String(candidate.source_url || ""),
+    "Vertical": "Food/bev and reefer-adjacent",
+    "Location": "Review required",
+    "Status": "Candidate"
+  }));
+
+  const createdCompanies = await createRecords("Companies", companyRecords);
+
+  const signalRecords = reviewCandidates.map((candidate, index) => ({
+    "Trigger Summary": String(candidate.trigger_summary || candidate.source_title),
+    "Company": [createdCompanies[index].id],
+    "Trigger Type": "Other",
+    "Evidence URL": String(candidate.source_url),
+    "Detected Date": new Date().toISOString().slice(0, 10),
+    "Status": "Review"
+  }));
+
+  const scoreRecords = reviewCandidates.map((candidate, index) => ({
+    "Urgency Score": scoreValue(candidate.urgency_score),
+    "Confidence Score": scoreValue(candidate.confidence_score),
+    "Freight Relevance": String(candidate.freight_relevance || "Medium"),
+    "Notes": [
+      `Likely need: ${candidate.likely_freight_need || "Review required"}`,
+      `Buyer path: ${candidate.buyer_path || "Review required"}`,
+      `Outreach angle: ${candidate.outreach_angle || "Review required"}`,
+      `Automated source: ${candidate.source_title}`,
+      "Status: review candidate; not approved for client delivery."
+    ].join("\n"),
+    "Company": [createdCompanies[index].id]
+  }));
+
+  await createRecords("Signals", signalRecords);
+  await createRecords("Scores", scoreRecords);
+
+  await createRecords("Reports", [
+    {
+      "Report Name": `Automated Signal Scan - ${new Date().toISOString().slice(0, 10)}`,
+      "Report Period": new Date().toISOString().slice(0, 10),
+      "Status": "Draft"
+    }
+  ]);
+
+  return {
+    created: reviewCandidates.length,
+    skippedDuplicateOrLowScore: candidates.length - reviewCandidates.length
+  };
 }
 
 export async function getSummary() {
