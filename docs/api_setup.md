@@ -27,7 +27,9 @@ Use `.env.example` as the template for local credentials.
 These are not required for the current static site, but will be needed when Stripe automation is built into an app:
 
 - `STRIPE_SECRET_KEY`
+- `STRIPESECRETKEY`
 - `STRIPE_WEBHOOK_SECRET`
+- `STRIPEWEBHOOKSECRET`
 
 ## Stripe Webhook Automation
 
@@ -54,6 +56,11 @@ Required Vercel environment variables for the `triggerops` project:
 
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
+
+The code also accepts the current Vercel names:
+
+- `STRIPESECRETKEY`
+- `STRIPEWEBHOOKSECRET`
 
 Do not put these keys in the public website project.
 

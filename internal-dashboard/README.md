@@ -40,6 +40,8 @@ Also add internal dashboard protection:
 - `INTERNAL_DASHBOARD_USER`
 - `INTERNAL_DASHBOARD_PASSWORD`
 - `CRON_SECRET`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
 
 The dashboard also accepts the shorter Vercel variable names already used in this project:
 
@@ -49,9 +51,12 @@ The dashboard also accepts the shorter Vercel variable names already used in thi
 - `User`
 - `Password`
 - `Secret`
+- `CRONSECRET`
+- `STRIPESECRETKEY`
+- `STRIPEWEBHOOKSECRET`
 
 If `INTERNAL_DASHBOARD_PASSWORD` is missing in production, the dashboard returns `503` instead of exposing internal data.
-If `CRON_SECRET` is missing, scheduled engine routes will reject automation calls.
+If no cron secret is configured, scheduled engine routes will reject automation calls. Vercel's automatic cron bearer header uses `CRON_SECRET`; the code also accepts `CRONSECRET` when the bearer token is sent.
 
 Suggested internal domain:
 

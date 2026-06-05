@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { optionalEnv, requireEnv } from "./local-env";
+import { optionalEnv } from "./local-env";
 import { sendOnboardingEmail, upsertClient } from "./clients";
 
 type StripeEvent = {
@@ -29,7 +29,8 @@ function timingSafeEqual(a: string, b: string) {
 }
 
 export function verifyStripeEvent(rawBody: string, signatureHeader: string) {
-  const secret = requireEnv("STRIPE_WEBHOOK_SECRET");
+  const secret = optionalEnv("STRIPE_WEBHOOK_SECRET", "STRIPEWEBHOOKSECRET");
+  if (!secret) throw new Error("Missing required environment variable: STRIPE_WEBHOOK_SECRET or STRIPEWEBHOOKSECRET");
   const { timestamp, signature } = parseStripeSignature(signatureHeader);
   if (!timestamp || !signature) throw new Error("Missing Stripe webhook signature");
 
@@ -46,7 +47,7 @@ export function verifyStripeEvent(rawBody: string, signatureHeader: string) {
 }
 
 async function stripeFetch<T>(path: string) {
-  const key = optionalEnv("STRIPE_SECRET_KEY");
+  const key = optionalEnv("STRIPE_SECRET_KEY", "STRIPESECRETKEY");
   if (!key) return undefined;
 
   const response = await fetch(`https://api.stripe.com/v1/${path}`, {

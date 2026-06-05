@@ -30,7 +30,11 @@ export function middleware(request: NextRequest) {
   }
 
   if (request.nextUrl.pathname.startsWith("/api/cron/")) {
-    const cronSecret = process.env.CRON_SECRET || process.env.secret || process.env.Secret;
+    const cronSecret =
+      process.env.CRON_SECRET ||
+      process.env.CRONSECRET ||
+      process.env.secret ||
+      process.env.Secret;
     if (
       cronSecret &&
       request.headers.get("authorization") === `Bearer ${cronSecret}`
