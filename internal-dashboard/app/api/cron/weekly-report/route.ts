@@ -4,6 +4,10 @@ import { deliverWeeklyReports } from "@/lib/reports";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
+export function HEAD() {
+  return new NextResponse(null, { status: 405 });
+}
+
 export async function GET() {
   try {
     const result = await deliverWeeklyReports();
