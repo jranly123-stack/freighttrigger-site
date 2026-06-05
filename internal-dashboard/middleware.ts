@@ -25,6 +25,10 @@ function parseBasicAuth(header: string) {
 }
 
 export function middleware(request: NextRequest) {
+  if (request.nextUrl.pathname === "/api/stripe/webhook") {
+    return NextResponse.next();
+  }
+
   if (request.nextUrl.pathname.startsWith("/api/cron/")) {
     const cronSecret = process.env.CRON_SECRET || process.env.secret || process.env.Secret;
     if (
