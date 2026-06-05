@@ -49,7 +49,7 @@ export async function listRecords(table: string, maxRecords = 100) {
   return data.records ?? [];
 }
 
-async function createRecords(table: string, records: Array<Record<string, unknown>>) {
+export async function createRecords(table: string, records: Array<Record<string, unknown>>) {
   if (!records.length) return [];
   const created: AirtableRecord[] = [];
 
@@ -65,6 +65,25 @@ async function createRecords(table: string, records: Array<Record<string, unknow
   }
 
   return created;
+}
+
+export async function patchRecords(table: string, records: Array<{ id: string; fields: Record<string, unknown> }>) {
+  if (!records.length) return [];
+  const updated: AirtableRecord[] = [];
+
+  for (let index = 0; index < records.length; index += 10) {
+    const batch = records.slice(index, index + 10);
+    const data = await airtableFetch<{ records: AirtableRecord[] }>(baseUrl(table), {
+      method: "PATCH",
+      body: JSON.stringify({
+        typecast: true,
+        records: batch
+      })
+    });
+    updated.push(...(data.records ?? []));
+  }
+
+  return updated;
 }
 
 function scoreValue(value: unknown) {

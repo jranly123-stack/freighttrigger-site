@@ -1,0 +1,181 @@
+#!/usr/bin/env python3
+"""Enrich queued buyer prospects with public contact emails."""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import time
+import urllib.parse
+import urllib.request
+from pathlib import Path
+from urllib.parse import urljoin, urlparse
+
+ROOT = Path(__file__).resolve().parents[1]
+ENV_PATH = ROOT / ".env"
+CONTACT_PATHS = ["", "/contact", "/contact-us", "/about", "/about-us", "/team", "/sales"]
+BAD_PREFIXES = (
+    "noreply",
+    "no-reply",
+    "donotreply",
+    "privacy",
+    "legal",
+    "abuse",
+    "security",
+    "careers",
+    "jobs",
+    "press",
+    "pr",
+    "support",
+    "safety",
+    "billing",
+    "accounting",
+)
+GOOD_PREFIXES = ("sales", "info", "contact", "hello", "team", "business", "shipping", "logistics")
+BAD_DOMAINS = ("zohoforms.com", "sentry.io", "example.com")
+
+
+def load_env() -> None:
+    for raw in ENV_PATH.read_text().splitlines():
+        line = raw.strip()
+        if line and not line.startswith("#") and "=" in line:
+            key, value = line.split("=", 1)
+            os.environ.setdefault(key, value)
+
+
+def http_json(method: str, url: str, headers: dict | None = None, body: dict | None = None) -> dict:
+    data = None
+    request_headers = headers or {}
+    if body is not None:
+        data = json.dumps(body).encode()
+        request_headers["Content-Type"] = "application/json"
+    request = urllib.request.Request(url, data=data, method=method, headers=request_headers)
+    with urllib.request.urlopen(request, timeout=45) as response:
+        raw = response.read().decode()
+        return json.loads(raw) if raw else {}
+
+
+def airtable_url(table: str, query: dict | None = None) -> str:
+    url = f"https://api.airtable.com/v0/{os.environ['AIRTABLE_BASE_ID']}/{urllib.parse.quote(table)}"
+    if query:
+        url += "?" + urllib.parse.urlencode(query, doseq=True)
+    return url
+
+
+def airtable(method: str, table: str, body: dict | None = None, query: dict | None = None) -> dict:
+    return http_json(
+        method,
+        airtable_url(table, query),
+        headers={
+            "Authorization": f"Bearer {os.environ['AIRTABLE_API_TOKEN']}",
+            "Content-Type": "application/json",
+        },
+        body=body,
+    )
+
+
+def list_records(table: str) -> list[dict]:
+    records: list[dict] = []
+    offset = None
+    while True:
+        query = {"pageSize": 100}
+        if offset:
+            query["offset"] = offset
+        payload = airtable("GET", table, query=query)
+        records.extend(payload.get("records", []))
+        offset = payload.get("offset")
+        if not offset:
+            return records
+
+
+def patch_records(table: str, records: list[dict]) -> None:
+    for index in range(0, len(records), 10):
+        airtable("PATCH", table, {"typecast": True, "records": records[index : index + 10]})
+        time.sleep(0.2)
+
+
+def scrape(url: str) -> str:
+    try:
+        payload = http_json(
+            "POST",
+            "https://api.firecrawl.dev/v1/scrape",
+            headers={
+                "Authorization": f"Bearer {os.environ['FIRECRAWL_API_KEY']}",
+                "Content-Type": "application/json",
+            },
+            body={"url": url, "formats": ["markdown"]},
+        )
+        data = payload.get("data") or {}
+        return data.get("markdown") or data.get("content") or ""
+    except Exception:
+        return ""
+
+
+def domain(url: str) -> str:
+    return urlparse(url).netloc.lower().removeprefix("www.")
+
+
+def emails_from(text: str, site_domain: str) -> list[str]:
+    candidates = set(re.findall(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", text))
+    scored: list[tuple[int, str]] = []
+    for email in candidates:
+        email = email.strip(".,;:()[]{}<>").lower()
+        prefix, email_domain = email.split("@", 1)
+        if any(prefix.startswith(bad) for bad in BAD_PREFIXES):
+            continue
+        if any(email_domain.endswith(domain) for domain in BAD_DOMAINS):
+            continue
+        if not any(prefix == good or good in prefix for good in GOOD_PREFIXES):
+            continue
+        score = 0
+        if email_domain == site_domain:
+            score += 30
+        if prefix in GOOD_PREFIXES:
+            score += 20
+        if "sales" in prefix or "logistics" in prefix:
+            score += 10
+        scored.append((score, email))
+    return [email for _, email in sorted(scored, reverse=True)[:3]]
+
+
+def main() -> None:
+    load_env()
+    prospects = list_records("Broker Prospects")
+    updates = []
+    for prospect in prospects:
+        fields = prospect.get("fields", {})
+        if fields.get("Contact Email"):
+            continue
+        website = fields.get("Website")
+        if not website:
+            continue
+        site_domain = domain(str(website))
+        found: list[str] = []
+        for path in CONTACT_PATHS:
+            url = urljoin(str(website).rstrip("/") + "/", path.lstrip("/"))
+            text = scrape(url)
+            found.extend(emails_from(text, site_domain))
+            if found:
+                break
+        found = list(dict.fromkeys(found))
+        if not found:
+            print(f"needs manual contact path: {fields.get('Company Name')}")
+            continue
+        updates.append(
+            {
+                "id": prospect["id"],
+                "fields": {
+                    "Contact Email": found[0],
+                    "Status": "Qualified",
+                    "Research Notes": f"{fields.get('Research Notes', '')}\nContact enrichment: {found[0]}",
+                },
+            }
+        )
+        print(f"enriched: {fields.get('Company Name')} -> {found[0]}")
+    patch_records("Broker Prospects", updates)
+    print(f"updated {len(updates)} prospect contacts")
+
+
+if __name__ == "__main__":
+    main()
