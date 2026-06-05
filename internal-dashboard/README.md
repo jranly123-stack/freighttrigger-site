@@ -35,6 +35,13 @@ Create a separate Vercel project using:
 
 Add the same API environment variables in Vercel project settings.
 
+Also add internal dashboard protection:
+
+- `INTERNAL_DASHBOARD_USER`
+- `INTERNAL_DASHBOARD_PASSWORD`
+
+If `INTERNAL_DASHBOARD_PASSWORD` is missing in production, the dashboard returns `503` instead of exposing internal data.
+
 Suggested internal domain:
 
 `ops.getfreighttrigger.com`
@@ -42,3 +49,5 @@ Suggested internal domain:
 ## Current Boundary
 
 This dashboard runs the engine and reviews signals. It is not customer-facing yet.
+
+Beta clients should receive polished report/feed deliverables, not access to this operator dashboard.
