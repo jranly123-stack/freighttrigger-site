@@ -7,7 +7,11 @@ export const maxDuration = 60;
 
 export async function GET(_request: NextRequest) {
   try {
-    const result = await runEngine();
+    const result = await runEngine({
+      maxQueries: 1,
+      maxResultsPerQuery: 2,
+      deadlineMs: 45_000
+    });
     const airtable = await createReviewCandidates(result.candidates);
     return NextResponse.json({
       ranAt: result.ranAt,

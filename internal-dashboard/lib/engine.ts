@@ -30,8 +30,24 @@ export type Candidate = {
   query: string;
 };
 
-async function jsonFetch<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, { ...init, cache: "no-store" });
+type EngineOptions = {
+  maxQueries?: number;
+  maxResultsPerQuery?: number;
+  deadlineMs?: number;
+};
+
+async function jsonFetch<T>(url: string, init?: RequestInit & { timeoutMs?: number }): Promise<T> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), init?.timeoutMs ?? 15_000);
+  const { timeoutMs: _timeoutMs, ...fetchInit } = init ?? {};
+
+  let response: Response;
+  try {
+    response = await fetch(url, { ...fetchInit, signal: controller.signal, cache: "no-store" });
+  } finally {
+    clearTimeout(timeout);
+  }
+
   if (!response.ok) {
     const text = await response.text();
     throw new Error(`${response.status}: ${text.slice(0, 220)}`);
@@ -39,17 +55,18 @@ async function jsonFetch<T>(url: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-async function serpSearch(query: string) {
+async function serpSearch(query: string, maxResults: number) {
   const params = new URLSearchParams({
     engine: "google",
     q: query,
     api_key: requireEnv("SERPAPI_API_KEY"),
-    num: "5"
+    num: String(maxResults)
   });
   const data = await jsonFetch<{ organic_results?: Array<{ title?: string; link?: string }> }>(
-    `https://serpapi.com/search.json?${params.toString()}`
+    `https://serpapi.com/search.json?${params.toString()}`,
+    { timeoutMs: 8_000 }
   );
-  return data.organic_results?.slice(0, 5) ?? [];
+  return data.organic_results?.slice(0, maxResults) ?? [];
 }
 
 async function scrape(url: string) {
@@ -61,7 +78,8 @@ async function scrape(url: string) {
         Authorization: `Bearer ${requireEnv("FIRECRAWL_API_KEY")}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ url, formats: ["markdown"] })
+      body: JSON.stringify({ url, formats: ["markdown"] }),
+      timeoutMs: 12_000
     }
   );
   return (data.data?.markdown || data.data?.content || "").slice(0, 6000);
@@ -94,20 +112,35 @@ async function classify(title: string, url: string, text: string): Promise<Omit<
             `Title: ${title}\nURL: ${url}\nSource text:\n${text}`
         }
       ]
-    })
+    }),
+    timeoutMs: 15_000
   });
 
   return JSON.parse(data.choices[0]?.message.content || "{}");
 }
 
-export async function runEngine() {
+export async function runEngine(options: EngineOptions = {}) {
+  const startedAt = Date.now();
+  const deadlineMs = options.deadlineMs ?? 52_000;
+  const maxQueries = options.maxQueries ?? QUERIES.length;
+  const maxResultsPerQuery = options.maxResultsPerQuery ?? 5;
   const candidates: Candidate[] = [];
   const seen = new Set<string>();
   const logs: string[] = [];
 
-  for (const query of QUERIES) {
-    const results = await serpSearch(query);
+  for (const query of QUERIES.slice(0, maxQueries)) {
+    if (Date.now() - startedAt > deadlineMs) {
+      logs.push("stopped: engine deadline reached before next query");
+      break;
+    }
+
+    const results = await serpSearch(query, maxResultsPerQuery);
     for (const result of results) {
+      if (Date.now() - startedAt > deadlineMs) {
+        logs.push("stopped: engine deadline reached before next source");
+        break;
+      }
+
       const url = result.link;
       const title = result.title || "Untitled source";
       if (!url || seen.has(url)) continue;
