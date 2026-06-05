@@ -16,7 +16,7 @@ export function inBusinessWindow(now = new Date()) {
   const minute = Number(parts.minute);
   const dayOk = ["Mon", "Tue", "Wed", "Thu", "Fri"].includes(weekday);
   const minutes = hour * 60 + minute;
-  return dayOk && minutes >= 9 * 60 + 30 && minutes <= 15 * 60 + 30;
+  return dayOk && minutes >= 9 * 60 && minutes <= 20 * 60;
 }
 
 export function daysBetween(a: Date, b: Date) {

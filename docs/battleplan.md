@@ -24,7 +24,7 @@ Active Stripe product:
 
 - **Beta FreightTrigger Signal Feed**
 - `$497/month`
-- Weekly trigger-scored shipper opportunities with evidence, likely freight need, buyer role/contact path, and outreach angle.
+- Monday trigger-scored shipper opportunities with evidence, likely freight need, buyer role/contact path, urgency/confidence scoring, and outreach angle for the sales week ahead.
 
 Keep this as the only public checkout product until the delivery engine has repeatable data quality.
 
@@ -53,7 +53,7 @@ Reason:
 6. Reports are generated from Airtable.
 7. Outreach angles are generated from the signal record.
 8. Prospect acquisition creates broker/3PL buyer records.
-9. Controlled outreach sends only during business hours.
+9. Controlled outreach sends only during weekday business hours.
 10. Replies are classified into interested, sample requested, objection, unsubscribe, bad fit, and follow-up states.
 11. Stripe subscription events create/update client records and trigger onboarding email.
 12. Weekly report delivery sends active clients the current signal feed.
@@ -105,6 +105,7 @@ Phase 1:
 Phase 2:
 
 - Scheduled scans.
+- Scheduled broker/3PL buyer acquisition.
 - Daily candidate output.
 - Airtable insert for qualified signals only.
 - Weekly report generation.

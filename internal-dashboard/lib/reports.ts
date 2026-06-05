@@ -21,12 +21,18 @@ export async function buildWeeklyReportBody() {
     .slice(0, 12);
 
   const lines = [
-    "FreightTrigger Weekly Signal Feed",
+    "FreightTrigger Monday Signal Feed",
     `Period: ${reportPeriod()}`,
     "",
-    "Coverage: food/bev, reefer, and cold-chain-adjacent shipper opportunities.",
+    "Coverage: food/bev, reefer, and cold-chain-adjacent shipper opportunities for this sales week.",
     "",
-    "This feed separates observed evidence from inferred freight need. It is sales intelligence only, not verified buyer intent.",
+    "Use this feed to prioritize prospecting, not as verified buyer intent. Each record separates observed evidence from inferred freight need.",
+    "",
+    "How to use it this week:",
+    "1. Start with the highest-priority records.",
+    "2. Open the evidence URL before outreach.",
+    "3. Lead with the trigger, not a generic capacity pitch.",
+    "4. Route replies back into your sales process and mark bad fits quickly.",
     ""
   ];
 
@@ -38,7 +44,9 @@ export async function buildWeeklyReportBody() {
       `Evidence: ${row.evidenceUrl}`,
       `Priority: ${row.urgency}/100 urgency, ${row.confidence}/100 confidence`,
       `Freight read: ${row.relevance}`,
-      "Sales action: review the evidence, map the likely operations buyer, and lead with the business change rather than a generic capacity pitch.",
+      "Buyer path: logistics, transportation, operations, supply chain, or facility-level distribution leadership.",
+      "Outreach position: reference the business change first, then offer a coverage/routing/backup-capacity review.",
+      "Suggested opener: Saw a recent operating change that may affect distribution planning. During these windows, teams often review lane coverage, routing, and backup capacity before volume pressure shows up.",
       ""
     );
   });
@@ -51,7 +59,7 @@ export async function buildWeeklyReportBody() {
   );
 
   return {
-    subject: `FreightTrigger Weekly Signal Feed - ${new Date().toISOString().slice(0, 10)}`,
+    subject: `FreightTrigger Monday Signal Feed - ${new Date().toISOString().slice(0, 10)}`,
     body: lines.join("\n"),
     count: rows.length
   };
