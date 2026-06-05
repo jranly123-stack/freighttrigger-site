@@ -101,8 +101,29 @@ def classify(text: str) -> dict:
     return json.loads(response["choices"][0]["message"]["content"])
 
 
-def airtable_url(table: str) -> str:
-    return f"https://api.airtable.com/v0/{os.environ['AIRTABLE_BASE_ID']}/{urllib.parse.quote(table)}"
+def airtable_url(table: str, query: dict | None = None) -> str:
+    url = f"https://api.airtable.com/v0/{os.environ['AIRTABLE_BASE_ID']}/{urllib.parse.quote(table)}"
+    if query:
+        url += "?" + urllib.parse.urlencode(query, doseq=True)
+    return url
+
+
+def list_records(table: str) -> list[dict]:
+    records: list[dict] = []
+    offset = None
+    while True:
+        query = {"pageSize": 100}
+        if offset:
+            query["offset"] = offset
+        payload = http_json(
+            "GET",
+            airtable_url(table, query),
+            headers={"Authorization": f"Bearer {os.environ['AIRTABLE_API_TOKEN']}"},
+        )
+        records.extend(payload.get("records", []))
+        offset = payload.get("offset")
+        if not offset:
+            return records
 
 
 def create_record(table: str, fields: dict) -> None:
@@ -127,7 +148,17 @@ def sender_from(headers: list[dict]) -> str:
 def main() -> None:
     load_env()
     token = refresh_access_token()
-    results = gmail(token, "GET", "messages?q=in:inbox newer_than:14d -from:signals@getfreighttrigger.com&maxResults=10")
+    query = urllib.parse.urlencode(
+        {
+            "q": f"in:inbox newer_than:14d -from:{FROM_EMAIL}",
+            "maxResults": 10,
+        }
+    )
+    results = gmail(token, "GET", f"messages?{query}")
+    existing = {
+        str(record.get("fields", {}).get("Reply Summary", ""))
+        for record in list_records("Replies")
+    }
     processed = 0
     for item in results.get("messages", []) or []:
         message = gmail(token, "GET", f"messages/{item['id']}?format=full")
@@ -136,11 +167,14 @@ def main() -> None:
         text = decode_body(message.get("payload", {}))
         if not sender or FROM_EMAIL in sender or not text:
             continue
+        marker = f"[gmail:{item['id']}]"
+        if any(marker in summary for summary in existing):
+            continue
         result = classify(text)
         create_record(
             "Replies",
             {
-                "Reply Summary": result.get("summary", text[:500]),
+                "Reply Summary": f"{marker} {result.get('summary', text[:500])}",
                 "Intent": result.get("intent", "Needs Info"),
                 "Next Action": result.get("next_action", "Review reply."),
             },
