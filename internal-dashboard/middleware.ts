@@ -35,9 +35,11 @@ export function middleware(request: NextRequest) {
       process.env.CRONSECRET ||
       process.env.secret ||
       process.env.Secret;
+    const isVercelCron = request.headers.get("user-agent") === "vercel-cron/1.0";
     if (
       cronSecret &&
-      request.headers.get("authorization") === `Bearer ${cronSecret}`
+      (request.headers.get("authorization") === `Bearer ${cronSecret}` ||
+        (process.env.CRONSECRET && isVercelCron))
     ) {
       return NextResponse.next();
     }
