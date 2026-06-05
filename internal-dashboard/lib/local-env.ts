@@ -30,3 +30,12 @@ export function requireEnv(name: string) {
   if (!value) throw new Error(`Missing required environment variable: ${name}`);
   return value;
 }
+
+export function optionalEnv(...names: string[]) {
+  loadLocalEnv();
+  for (const name of names) {
+    const value = process.env[name];
+    if (value) return value;
+  }
+  return "";
+}

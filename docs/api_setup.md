@@ -29,6 +29,34 @@ These are not required for the current static site, but will be needed when Stri
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 
+## Stripe Webhook Automation
+
+Internal dashboard endpoint:
+
+`https://triggerops.vercel.app/api/stripe/webhook`
+
+Events to send:
+
+- `checkout.session.completed`
+- `customer.subscription.created`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+- `invoice.payment_succeeded`
+
+What it does:
+
+1. Verifies the Stripe webhook signature.
+2. Creates or updates the Airtable `Clients` record.
+3. Marks the Stripe status.
+4. Sends the beta onboarding email from `signals@getfreighttrigger.com`.
+
+Required Vercel environment variables for the `triggerops` project:
+
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+
+Do not put these keys in the public website project.
+
 ## Gmail OAuth Setup
 
 Gmail automation requires one account-owner browser approval. After that, the engine can refresh access in the background.

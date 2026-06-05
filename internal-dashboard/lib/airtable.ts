@@ -1,7 +1,7 @@
 import { requireEnv } from "./local-env";
 import type { Candidate } from "./engine";
 
-type AirtableRecord = {
+export type AirtableRecord = {
   id: string;
   fields: Record<string, unknown>;
 };
@@ -58,6 +58,7 @@ export async function createRecords(table: string, records: Array<Record<string,
     const data = await airtableFetch<{ records: AirtableRecord[] }>(baseUrl(table), {
       method: "POST",
       body: JSON.stringify({
+        typecast: true,
         records: batch.map((fields) => ({ fields }))
       })
     });

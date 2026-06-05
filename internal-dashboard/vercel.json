@@ -7,6 +7,14 @@
     {
       "path": "/api/cron/outreach-send",
       "schedule": "30 14 * * 2-5"
+    },
+    {
+      "path": "/api/cron/reply-loop",
+      "schedule": "0 17 * * 1-5"
+    },
+    {
+      "path": "/api/cron/weekly-report",
+      "schedule": "0 15 * * 3"
     }
   ]
 }

@@ -1,24 +1,8 @@
 import { listRecords, patchRecords } from "./airtable";
 import { sendGmailMessage } from "./gmail";
+import { inBusinessWindow } from "./time";
 
 const MAX_SENDS_PER_RUN = 3;
-
-function inBusinessWindow(now = new Date()) {
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York",
-    weekday: "short",
-    hour: "numeric",
-    minute: "numeric",
-    hour12: false
-  });
-  const parts = Object.fromEntries(formatter.formatToParts(now).map((part) => [part.type, part.value]));
-  const weekday = String(parts.weekday);
-  const hour = Number(parts.hour);
-  const minute = Number(parts.minute);
-  const dayOk = ["Tue", "Wed", "Thu", "Fri"].includes(weekday);
-  const minutes = hour * 60 + minute;
-  return dayOk && minutes >= 9 * 60 + 30 && minutes <= 15 * 60 + 30;
-}
 
 export async function sendQueuedOutreach({ force = false } = {}) {
   const now = new Date();

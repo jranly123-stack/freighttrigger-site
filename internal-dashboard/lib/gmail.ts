@@ -57,3 +57,84 @@ export async function sendGmailMessage(to: string, subject: string, body: string
     body: JSON.stringify({ raw: base64Url(mime) })
   });
 }
+
+type GmailHeader = {
+  name: string;
+  value: string;
+};
+
+type GmailPart = {
+  mimeType?: string;
+  body?: { data?: string };
+  parts?: GmailPart[];
+};
+
+export type GmailMessage = {
+  id: string;
+  threadId: string;
+  snippet?: string;
+  payload?: {
+    headers?: GmailHeader[];
+    body?: { data?: string };
+    parts?: GmailPart[];
+  };
+};
+
+function decodeBody(data = "") {
+  if (!data) return "";
+  const normalized = data.replace(/-/g, "+").replace(/_/g, "/");
+  return Buffer.from(normalized, "base64").toString("utf8");
+}
+
+function bodyFromParts(parts: GmailPart[] = []): string {
+  for (const part of parts) {
+    if (part.mimeType === "text/plain" && part.body?.data) return decodeBody(part.body.data);
+    const nested = bodyFromParts(part.parts);
+    if (nested) return nested;
+  }
+  return "";
+}
+
+export function headerValue(message: GmailMessage, name: string) {
+  return (
+    message.payload?.headers?.find((header) => header.name.toLowerCase() === name.toLowerCase())?.value || ""
+  );
+}
+
+export function messageBody(message: GmailMessage) {
+  return decodeBody(message.payload?.body?.data) || bodyFromParts(message.payload?.parts) || message.snippet || "";
+}
+
+export function emailFromHeader(header: string) {
+  const match = header.match(/<([^>]+)>/);
+  return (match?.[1] || header).trim().toLowerCase();
+}
+
+export async function listGmailMessages(query: string, maxResults = 10) {
+  const token = await refreshGmailAccessToken();
+  const params = new URLSearchParams({
+    q: query,
+    maxResults: String(maxResults)
+  });
+  const data = await jsonFetch<{ messages?: Array<{ id: string; threadId: string }> }>(
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages?${params.toString()}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }
+  );
+  return data.messages ?? [];
+}
+
+export async function getGmailMessage(id: string) {
+  const token = await refreshGmailAccessToken();
+  return jsonFetch<GmailMessage>(
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(id)}?format=full`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }
+  );
+}

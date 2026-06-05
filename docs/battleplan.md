@@ -12,6 +12,10 @@ Completed:
 - Airtable system of record
 - Real seed data from the first researched report
 - First one-shot signal discovery pipeline
+- Internal `triggerops` Vercel dashboard
+- Scheduled signal scan and controlled outreach routes
+- Gmail API sending and inbox classification foundation
+- Stripe webhook/onboarding code path
 - 8-agent operating model
 
 ## Current Product
@@ -48,6 +52,12 @@ Reason:
 5. Qualified candidates are inserted into Airtable.
 6. Reports are generated from Airtable.
 7. Outreach angles are generated from the signal record.
+8. Prospect acquisition creates broker/3PL buyer records.
+9. Controlled outreach sends only during business hours.
+10. Replies are classified into interested, sample requested, objection, unsubscribe, bad fit, and follow-up states.
+11. Stripe subscription events create/update client records and trigger onboarding email.
+12. Weekly report delivery sends active clients the current signal feed.
+13. Reply and subscription outcomes feed back into prospect status and scoring notes.
 
 ## 8-Agent Operating Loop
 
@@ -64,13 +74,13 @@ Reason:
 
 Do not use vibe code for the public website. The website is already done.
 
-Use Vercel/vibe code later for an internal app:
+Use Vercel/vibe code for the internal app only:
 
 - Framework: Next.js on Vercel
 - Database: Airtable first, Supabase later if needed
 - Purpose: internal admin and report operations
 
-First internal app screens:
+Current/next internal app screens:
 
 - Signal candidate review
 - Airtable signal database view
@@ -78,6 +88,9 @@ First internal app screens:
 - Client feed generator
 - Outreach draft generator
 - Suppression list manager
+- Engine run status
+- Reply classification status
+- Stripe onboarding status
 
 Client-facing dashboard comes later, after 3-5 paying clients.
 
@@ -100,12 +113,12 @@ Phase 3:
 
 - Gmail API OAuth.
 - Reply classification.
-- Follow-up drafts.
+- Follow-up queueing and controlled sending.
 - Opt-out/suppression enforcement.
 
 Phase 4:
 
-- Stripe subscription status checks.
+- Stripe webhook onboarding.
 - Client feed access rules.
 - Internal Vercel admin app.
 
