@@ -46,6 +46,9 @@ The dashboard also accepts the shorter Vercel variable names already used in thi
 - `user`
 - `password`
 - `secret`
+- `User`
+- `Password`
+- `Secret`
 
 If `INTERNAL_DASHBOARD_PASSWORD` is missing in production, the dashboard returns `503` instead of exposing internal data.
 If `CRON_SECRET` is missing, scheduled engine routes will reject automation calls.
