@@ -104,8 +104,8 @@ def in_send_window(now: datetime) -> bool:
     local = now.astimezone(SEND_TZ)
     if local.weekday() > 4:
         return False
-    start = local.replace(hour=9, minute=30, second=0, microsecond=0)
-    end = local.replace(hour=15, minute=30, second=0, microsecond=0)
+    start = local.replace(hour=9, minute=0, second=0, microsecond=0)
+    end = local.replace(hour=20, minute=0, second=0, microsecond=0)
     return start <= local <= end
 
 
