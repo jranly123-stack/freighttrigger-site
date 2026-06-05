@@ -41,6 +41,12 @@ Also add internal dashboard protection:
 - `INTERNAL_DASHBOARD_PASSWORD`
 - `CRON_SECRET`
 
+The dashboard also accepts the shorter Vercel variable names already used in this project:
+
+- `user`
+- `password`
+- `secret`
+
 If `INTERNAL_DASHBOARD_PASSWORD` is missing in production, the dashboard returns `503` instead of exposing internal data.
 If `CRON_SECRET` is missing, scheduled engine routes will reject automation calls.
 
