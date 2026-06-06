@@ -9,7 +9,10 @@ const QUERIES = [
   "refrigerated freight broker food beverage logistics contact",
   "food beverage 3PL refrigerated logistics contact",
   "reefer FTL broker food shippers contact",
-  "cold chain logistics broker food beverage contact"
+  "cold chain logistics broker food beverage contact",
+  "food beverage freight broker contact us inurl:contact",
+  "reefer logistics 3PL contact us food beverage",
+  "temperature controlled freight broker contact us"
 ];
 
 const NOISE_DOMAINS = [
@@ -25,6 +28,12 @@ const NOISE_DOMAINS = [
   "mapquest.com",
   "yellowpages.com",
   "freightwaves.com",
+  "foodlogistics.com",
+  "usda.gov",
+  "carriersource.io",
+  "nfraweb.org",
+  "pdfcoffee.com",
+  "scribd.com",
   "dat.com",
   "truckstop.com"
 ];
@@ -108,6 +117,21 @@ function extractEmails(text: string, sourceDomain: string) {
   }
 
   return Array.from(new Set(cleaned)).slice(0, 3);
+}
+
+function extractPhones(text: string) {
+  const matches = text.match(/(?:\+1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g) ?? [];
+  const cleaned: string[] = [];
+
+  for (const raw of matches) {
+    let digits = raw.replace(/\D/g, "");
+    if (digits.length === 11 && digits.startsWith("1")) digits = digits.slice(1);
+    if (digits.length !== 10) continue;
+    if (["000", "111", "123", "555"].some((prefix) => digits.startsWith(prefix))) continue;
+    cleaned.push(`(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`);
+  }
+
+  return Array.from(new Set(cleaned)).slice(0, 4);
 }
 
 async function serpSearch(query: string, maxResults: number) {
@@ -243,6 +267,7 @@ export async function acquireBuyerProspects(options: AcquisitionOptions = {}) {
           continue;
         }
         const emails = extractEmails(text, siteDomain);
+        const phones = extractPhones(text);
         const analysis = await classifyProspect(title, url, text, emails);
         const fitScore = Number(analysis.fit_score || 0);
         if (!analysis.include || fitScore < 70) {
@@ -266,7 +291,10 @@ export async function acquireBuyerProspects(options: AcquisitionOptions = {}) {
             `Fit score: ${fitScore}`,
             `Reason: ${analysis.reason || "Qualified by scheduled acquisition."}`,
             `Personalization: ${analysis.personalization || "Lead with food/bev shipper timing intelligence."}`,
-            `Source: ${url}`
+            `Source: ${url}`,
+            `Public emails: ${emails.length ? emails.join(", ") : "not publicly verified"}`,
+            `Public phones: ${phones.length ? phones.join(", ") : "not publicly verified"}`,
+            `Contact route: ${siteRoot}/contact`
           ].join("\n")
         });
         outreach.push({

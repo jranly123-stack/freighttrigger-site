@@ -188,20 +188,49 @@ export async function getSignalRows() {
     if (links?.[0]) scoresByCompanyId.set(links[0], score);
   }
 
+  function noteValue(notes: string, label: string) {
+    const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const match = notes.match(new RegExp(`${escaped}:\\s*([^\\n]+)`, "i"));
+    return match?.[1]?.trim() || "";
+  }
+
+  function contactPath(companyName: string, website: string, notes: string, buyerPath: string) {
+    const enriched = noteValue(notes, "Contact path");
+    if (enriched) return enriched;
+
+    const contactUrl = website ? `${website.replace(/\/$/, "")}/contact` : "Public contact route required";
+    const linkedInQuery = encodeURIComponent(`${companyName} logistics manager transportation manager operations director`);
+    return [
+      `Primary roles: ${buyerPath || "logistics, transportation, operations, supply chain, or facility-level distribution leadership"}`,
+      `Public route: ${contactUrl}`,
+      `LinkedIn/search path: https://www.google.com/search?q=${linkedInQuery}`,
+      "Direct email/phone: include only when verified by enrichment; do not invent."
+    ].join(" | ");
+  }
+
   return signals.map((signal) => {
     const companyId = (signal.fields.Company as string[] | undefined)?.[0];
     const company = companyId ? companiesById.get(companyId) : undefined;
     const score = companyId ? scoresByCompanyId.get(companyId) : undefined;
+    const notes = String(score?.fields.Notes ?? "");
+    const companyName = String(company?.fields["Company Name"] ?? "Unknown account");
+    const website = String(company?.fields.Website ?? "");
+    const buyerPath = noteValue(notes, "Buyer path");
     return {
       id: signal.id,
-      company: String(company?.fields["Company Name"] ?? "Unknown account"),
+      company: companyName,
+      website,
       vertical: String(company?.fields.Vertical ?? ""),
       location: String(company?.fields.Location ?? ""),
       trigger: String(signal.fields["Trigger Summary"] ?? ""),
       evidenceUrl: String(signal.fields["Evidence URL"] ?? ""),
       urgency: Number(score?.fields["Urgency Score"] ?? 0),
       confidence: Number(score?.fields["Confidence Score"] ?? 0),
-      relevance: String(score?.fields["Freight Relevance"] ?? "Unscored")
+      relevance: String(score?.fields["Freight Relevance"] ?? "Unscored"),
+      likelyNeed: noteValue(notes, "Likely need"),
+      buyerPath,
+      contactPath: contactPath(companyName, website, notes, buyerPath),
+      outreachAngle: noteValue(notes, "Outreach angle")
     };
   });
 }

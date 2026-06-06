@@ -9,11 +9,21 @@ import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 ENV_PATH = ROOT / ".env"
 SAMPLE_URL = "https://getfreighttrigger.com/sample-feed.html"
 STRIPE_URL = "https://buy.stripe.com/14A8wO6R4df565JbjYfAc00"
+PUBLIC_SITE_URL = "https://getfreighttrigger.com"
+BAD_SOURCE_DOMAINS = (
+    "foodlogistics.com",
+    "usda.gov",
+    "carriersource.io",
+    "nfraweb.org",
+    "pdfcoffee.com",
+    "scribd.com",
+)
 
 
 def load_env() -> None:
@@ -82,21 +92,61 @@ def create_records(table: str, records: list[dict]) -> list[dict]:
     return created
 
 
+def host(value: str) -> str:
+    try:
+        return urlparse(value).netloc.lower().removeprefix("www.")
+    except Exception:
+        return ""
+
+
+def email_host(value: str) -> str:
+    if "@" not in value:
+        return ""
+    return value.rsplit("@", 1)[1].lower().removeprefix("www.")
+
+
+def same_domain(email: str, website: str) -> bool:
+    mail_host = email_host(email)
+    site_host = host(website)
+    if not mail_host or not site_host:
+        return False
+    return mail_host == site_host or mail_host.endswith("." + site_host) or site_host.endswith("." + mail_host)
+
+
+def bad_source(fields: dict) -> bool:
+    website = str(fields.get("Website", "")).lower()
+    notes = str(fields.get("Research Notes", "")).lower()
+    haystack = f"{website}\n{notes}"
+    return any(domain in haystack for domain in BAD_SOURCE_DOMAINS) or "ceo gate: rejected" in haystack
+
+
 def main() -> None:
     load_env()
     prospects = list_records("Broker Prospects")
     existing_outreach = list_records("Outreach")
+    suppression = {
+        str(record.get("fields", {}).get("Email", "")).strip().lower()
+        for record in list_records("Suppression List")
+    }
     prospects_with_outreach = {
         link
         for record in existing_outreach
         for link in record.get("fields", {}).get("Prospect", [])
-        if record.get("fields", {}).get("Status") in {"Queued", "Sent", "Scheduled"}
+        if record.get("fields", {}).get("Status") in {"Queued", "Sent", "Scheduled", "Rejected"}
     }
     drafts = []
     for prospect in prospects:
         fields = prospect.get("fields", {})
-        email = fields.get("Contact Email")
+        email = str(fields.get("Contact Email") or "").strip().lower()
         if not email or prospect["id"] in prospects_with_outreach:
+            continue
+        if fields.get("Status") != "Qualified":
+            continue
+        if email in suppression:
+            continue
+        if bad_source(fields):
+            continue
+        if not same_domain(email, str(fields.get("Website", ""))):
             continue
         company = fields.get("Company Name", "your team")
         target = fields.get("Target Vertical", "food/bev + reefer")
@@ -107,7 +157,8 @@ def main() -> None:
             "then packages the strongest food/bev and reefer-adjacent accounts into a weekly signal feed.\n\n"
             "The feed is built for logistics sales teams that want fewer stale shipper names and more context around why an account may be worth contacting now.\n\n"
             f"Sample feed: {SAMPLE_URL}\n\n"
-            "Beta is $497/month and includes weekly signal records with evidence URLs, likely freight need, buyer path, outreach angle, and urgency/confidence scoring.\n\n"
+            "Beta is $497/month and includes weekly signal records with evidence URLs, likely freight need, contact path, outreach angle, and urgency/confidence scoring.\n\n"
+            f"Website: {PUBLIC_SITE_URL}\n\n"
             f"Subscribe: {STRIPE_URL}\n\n"
             "If this is not relevant, reply \"not a fit\" and I will not follow up.\n\n"
             "FreightTrigger\n"

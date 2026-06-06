@@ -43,10 +43,11 @@ export async function buildWeeklyReportBody() {
       `Location: ${row.location || "Review required"}`,
       `Evidence: ${row.evidenceUrl}`,
       `Priority: ${row.urgency}/100 urgency, ${row.confidence}/100 confidence`,
-      `Freight read: ${row.relevance}`,
-      "Contact path: logistics, transportation, operations, supply chain, or facility-level distribution leadership. Use the verified website/contact-form route first, then enriched direct email/phone when available.",
+      `Freight read: ${row.likelyNeed || row.relevance}`,
+      `Buyer roles: ${row.buyerPath || "logistics, transportation, operations, supply chain, or facility-level distribution leadership"}`,
+      `Contact path: ${row.contactPath}`,
       "Outreach position: reference the business change first, then offer a coverage/routing/backup-capacity review.",
-      "Suggested opener: Saw a recent operating change that may affect distribution planning. During these windows, teams often review lane coverage, routing, and backup capacity before volume pressure shows up.",
+      `Suggested opener: ${row.outreachAngle || "Saw a recent operating change that may affect distribution planning. During these windows, teams often review lane coverage, routing, and backup capacity before volume pressure shows up."}`,
       ""
     );
   });

@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Enrich queued buyer prospects with public contact emails."""
+"""Enrich shipper signal records with public contact paths.
+
+This does not invent direct contacts. It appends public contact pages, visible
+emails, visible phone numbers, and search paths into Score notes for weekly
+client reports.
+"""
 
 from __future__ import annotations
 
@@ -10,12 +15,12 @@ import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
 ROOT = Path(__file__).resolve().parents[1]
 ENV_PATH = ROOT / ".env"
-CONTACT_PATHS = ["", "/contact", "/contact-us", "/about", "/about-us", "/team", "/sales"]
-BAD_PREFIXES = (
+CONTACT_PATHS = ["", "/contact", "/contact-us", "/locations", "/about", "/about-us"]
+BAD_EMAIL_PREFIXES = (
     "noreply",
     "no-reply",
     "donotreply",
@@ -28,12 +33,10 @@ BAD_PREFIXES = (
     "press",
     "pr",
     "support",
-    "safety",
     "billing",
-    "accounting",
+    "accounts",
 )
-GOOD_PREFIXES = ("sales", "info", "contact", "hello", "team", "business", "shipping", "logistics")
-BAD_DOMAINS = ("zohoforms.com", "sentry.io", "example.com")
+GOOD_EMAIL_PREFIXES = ("info", "contact", "sales", "transportation", "logistics", "shipping", "ops", "operations")
 
 
 def load_env() -> None:
@@ -107,39 +110,40 @@ def scrape(url: str) -> str:
             body={"url": url, "formats": ["markdown"]},
         )
         data = payload.get("data") or {}
-        return data.get("markdown") or data.get("content") or ""
+        return (data.get("markdown") or data.get("content") or "")[:10000]
     except Exception:
         return ""
 
 
-def domain(url: str) -> str:
-    return urlparse(url).netloc.lower().removeprefix("www.")
+def site_domain(url: str) -> str:
+    try:
+        return urllib.parse.urlparse(url).netloc.lower().removeprefix("www.")
+    except Exception:
+        return ""
 
 
-def emails_from(text: str, site_domain: str) -> list[str]:
-    candidates = set(re.findall(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", text))
+def clean_emails(text: str, domain: str) -> list[str]:
+    found = set(re.findall(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", text))
     scored: list[tuple[int, str]] = []
-    for email in candidates:
-        email = email.strip(".,;:()[]{}<>").lower()
+    for raw in found:
+        email = raw.strip(".,;:()[]{}<>").lower()
+        if "@" not in email:
+            continue
         prefix, email_domain = email.split("@", 1)
-        if any(prefix.startswith(bad) for bad in BAD_PREFIXES):
-            continue
-        if any(email_domain.endswith(domain) for domain in BAD_DOMAINS):
-            continue
-        if not any(prefix == good or good in prefix for good in GOOD_PREFIXES):
+        if any(prefix.startswith(bad) for bad in BAD_EMAIL_PREFIXES):
             continue
         score = 0
-        if email_domain == site_domain:
+        if domain and email_domain == domain:
             score += 30
-        if prefix in GOOD_PREFIXES:
-            score += 20
-        if "sales" in prefix or "logistics" in prefix:
-            score += 10
+        if any(good in prefix for good in GOOD_EMAIL_PREFIXES):
+            score += 15
+        if score <= 0:
+            continue
         scored.append((score, email))
-    return [email for _, email in sorted(scored, reverse=True)[:3]]
+    return [email for _, email in sorted(scored, reverse=True)[:4]]
 
 
-def phones_from(text: str) -> list[str]:
+def clean_phones(text: str) -> list[str]:
     candidates = re.findall(r"(?:\+1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}", text)
     cleaned = []
     for raw in candidates:
@@ -150,59 +154,80 @@ def phones_from(text: str) -> list[str]:
             continue
         if digits.startswith(("000", "111", "123", "555")):
             continue
-        cleaned.append(f"({digits[:3]}) {digits[3:6]}-{digits[6:]}")
+        phone = f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"
+        cleaned.append(phone)
     return list(dict.fromkeys(cleaned))[:4]
+
+
+def note_value(notes: str, label: str) -> str:
+    match = re.search(rf"{re.escape(label)}:\s*([^\n]+)", notes, re.I)
+    return match.group(1).strip() if match else ""
 
 
 def main() -> None:
     load_env()
-    prospects = list_records("Broker Prospects")
+    companies = list_records("Companies")
+    scores = list_records("Scores")
+    companies_by_id = {record["id"]: record for record in companies}
     updates = []
-    for prospect in prospects:
-        fields = prospect.get("fields", {})
-        if fields.get("Contact Email"):
+
+    for score in scores:
+        fields = score.get("fields", {})
+        notes = str(fields.get("Notes", ""))
+        if "Contact path:" in notes:
             continue
-        website = fields.get("Website")
+        company_id = (fields.get("Company") or [None])[0]
+        company = companies_by_id.get(company_id)
+        if not company:
+            continue
+        company_fields = company.get("fields", {})
+        name = str(company_fields.get("Company Name", "Unknown account"))
+        website = str(company_fields.get("Website", "")).strip()
         if not website:
             continue
-        site_domain = domain(str(website))
-        found: list[str] = []
-        phones: list[str] = []
-        contact_url = str(website)
+
+        domain = site_domain(website)
+        chosen_url = website
+        combined = ""
         for path in CONTACT_PATHS:
-            url = urljoin(str(website).rstrip("/") + "/", path.lstrip("/"))
+            url = urljoin(website.rstrip("/") + "/", path.lstrip("/"))
             text = scrape(url)
-            found.extend(emails_from(text, site_domain))
-            phones.extend(phones_from(text))
-            if found or phones:
-                contact_url = url
+            if len(text) > len(combined):
+                combined = text
+                chosen_url = url
+            emails = clean_emails(text, domain)
+            phones = clean_phones(text)
+            if emails or phones:
+                combined = text
+                chosen_url = url
                 break
-        found = list(dict.fromkeys(found))
-        phones = list(dict.fromkeys(phones))
-        if not found and not phones:
-            print(f"needs manual contact path: {fields.get('Company Name')}")
-            continue
+
+        emails = clean_emails(combined, domain)
+        phones = clean_phones(combined)
+        buyer_path = note_value(notes, "Buyer path") or "logistics, transportation, operations, supply chain, or facility leadership"
+        search = f"https://www.google.com/search?q={urllib.parse.quote(name + ' logistics manager transportation manager operations director')}"
+
+        contact_path = " | ".join(
+            [
+                f"Primary roles: {buyer_path}",
+                f"Public route: {chosen_url}",
+                f"Emails: {', '.join(emails) if emails else 'not publicly verified'}",
+                f"Phones: {', '.join(phones) if phones else 'not publicly verified'}",
+                f"Search path: {search}",
+            ]
+        )
         updates.append(
             {
-                "id": prospect["id"],
+                "id": score["id"],
                 "fields": {
-                    "Contact Email": found[0] if found else fields.get("Contact Email", ""),
-                    "Status": "Qualified",
-                    "Research Notes": (
-                        f"{fields.get('Research Notes', '')}\n"
-                        f"Contact enrichment route: {contact_url}\n"
-                        f"Public emails: {', '.join(found) if found else 'not publicly verified'}\n"
-                        f"Public phones: {', '.join(phones) if phones else 'not publicly verified'}"
-                    ),
+                    "Notes": notes.rstrip() + f"\nContact path: {contact_path}",
                 },
             }
         )
-        print(
-            f"enriched: {fields.get('Company Name')} -> "
-            f"{found[0] if found else 'no email'} | phones={len(phones)}"
-        )
-    patch_records("Broker Prospects", updates)
-    print(f"updated {len(updates)} prospect contacts")
+        print(f"contact path: {name} | emails={len(emails)} phones={len(phones)}")
+
+    patch_records("Scores", updates)
+    print(f"updated {len(updates)} score contact paths")
 
 
 if __name__ == "__main__":

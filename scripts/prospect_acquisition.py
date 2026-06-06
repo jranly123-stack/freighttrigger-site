@@ -27,6 +27,9 @@ QUERIES = [
     "food beverage 3PL refrigerated logistics contact",
     "reefer FTL broker food shippers contact",
     "cold chain logistics broker food beverage contact",
+    "food beverage freight broker contact us inurl:contact",
+    "reefer logistics 3PL contact us food beverage",
+    "temperature controlled freight broker contact us",
 ]
 
 NOISE_DOMAINS = (
@@ -42,6 +45,12 @@ NOISE_DOMAINS = (
     "mapquest.com",
     "yellowpages.com",
     "freightwaves.com",
+    "foodlogistics.com",
+    "usda.gov",
+    "carriersource.io",
+    "nfraweb.org",
+    "pdfcoffee.com",
+    "scribd.com",
     "dat.com",
     "truckstop.com",
 )
