@@ -92,6 +92,37 @@ def create_records(table: str, records: list[dict]) -> list[dict]:
     return created
 
 
+def patch_records(table: str, records: list[dict]) -> list[dict]:
+    updated = []
+    for index in range(0, len(records), 10):
+        payload = airtable(
+            "PATCH",
+            table,
+            {"typecast": True, "records": records[index : index + 10]},
+        )
+        updated.extend(payload.get("records", []))
+        time.sleep(0.2)
+    return updated
+
+
+def build_message(company: str) -> str:
+    return (
+        f"Hi {company} team,\n\n"
+        "Quick note. I am testing FreightTrigger for logistics sales teams selling into food/bev and reefer-adjacent accounts.\n\n"
+        "It is not another shipper list. Each week we send a short signal feed showing companies with current business movement, why the timing may matter, and the angle a rep can use.\n\n"
+        "I put a partial preview here:\n"
+        f"{SAMPLE_URL}\n\n"
+        "The preview keeps the full source trail and contact path locked, but it shows the shape.\n\n"
+        "Beta is $497/month if you want the current feed now and Monday updates after that:\n"
+        f"{STRIPE_URL}\n\n"
+        f"Website: {PUBLIC_SITE_URL}\n\n"
+        "If this is not relevant, reply \"not a fit\" and I will not follow up.\n\n"
+        "FreightTrigger\n"
+        "signals@getfreighttrigger.com\n\n"
+        "FreightTrigger provides sales intelligence only. We do not broker freight, arrange transportation, select carriers, handle loads, manage shipments, process contracts, store shipping documents, manage invoices, or move payments between shippers and carriers."
+    )
+
+
 def host(value: str) -> str:
     try:
         return urlparse(value).netloc.lower().removeprefix("www.")
@@ -124,6 +155,7 @@ def main() -> None:
     load_env()
     prospects = list_records("Broker Prospects")
     existing_outreach = list_records("Outreach")
+    prospects_by_id = {prospect["id"]: prospect for prospect in prospects}
     suppression = {
         str(record.get("fields", {}).get("Email", "")).strip().lower()
         for record in list_records("Suppression List")
@@ -151,21 +183,7 @@ def main() -> None:
         company = fields.get("Company Name", "your team")
         target = fields.get("Target Vertical", "food/bev + reefer")
         subject = "Food/bev shipper timing signals"
-        message = (
-            f"Hi {company} team,\n\n"
-            "Quick note. I am testing FreightTrigger for logistics sales teams selling into food/bev and reefer-adjacent accounts.\n\n"
-            "It is not another shipper list. Each week we send a short signal feed showing companies with current business movement, why the timing may matter, and the angle a rep can use.\n\n"
-            "I put a partial preview here:\n"
-            f"{SAMPLE_URL}\n\n"
-            "The preview keeps the full source trail and contact path locked, but it shows the shape.\n\n"
-            "Beta is $497/month if you want the current feed now and Monday updates after that:\n"
-            f"{STRIPE_URL}\n\n"
-            f"Website: {PUBLIC_SITE_URL}\n\n"
-            "If this is not relevant, reply \"not a fit\" and I will not follow up.\n\n"
-            "FreightTrigger\n"
-            "signals@getfreighttrigger.com\n\n"
-            "FreightTrigger provides sales intelligence only. We do not broker freight, arrange transportation, select carriers, handle loads, manage shipments, process contracts, store shipping documents, manage invoices, or move payments between shippers and carriers."
-        )
+        message = build_message(str(company))
         drafts.append(
             {
                 "Email Subject": subject,
@@ -176,7 +194,29 @@ def main() -> None:
             }
         )
     created = create_records("Outreach", drafts)
+    updates = []
+    for record in existing_outreach:
+        fields = record.get("fields", {})
+        if fields.get("Status") not in {"Queued", "Needs Contact", "Scheduled"}:
+            continue
+        prospect_id = (fields.get("Prospect") or [""])[0]
+        prospect = prospects_by_id.get(prospect_id)
+        if not prospect:
+            continue
+        company = prospect.get("fields", {}).get("Company Name", "your team")
+        updates.append(
+            {
+                "id": record["id"],
+                "fields": {
+                    "Email Subject": "Food/bev shipper timing signals",
+                    "Message": build_message(str(company)),
+                    "AI Personalization Tips": "Use the partial preview as the hook. Do not expose the full source trail before checkout.",
+                },
+            }
+        )
+    updated = patch_records("Outreach", updates)
     print(f"created {len(created)} send-ready outreach drafts")
+    print(f"updated {len(updated)} existing unsent outreach drafts")
 
 
 if __name__ == "__main__":
