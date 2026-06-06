@@ -1,0 +1,87 @@
+name: FreightTrigger automation
+
+on:
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Job to run: all, signal-scan, prospect-acquisition, outreach-send, reply-loop, weekly-report"
+        required: false
+        default: "all"
+  schedule:
+    - cron: "0 13 * * 1-5"
+    - cron: "15 13,17,21 * * 1-5"
+    - cron: "30 13,15,17,19,21,23 * * 1-5"
+    - cron: "0 14,18,22 * * 1-5"
+    - cron: "0 14 * * 1"
+
+jobs:
+  run-engine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      OPS_BASE_URL: https://triggerops.vercel.app
+      CRONSECRET: ${{ secrets.CRONSECRET }}
+    steps:
+      - name: Validate cron secret
+        run: |
+          if [ -z "$CRONSECRET" ]; then
+            echo "Missing GitHub secret CRONSECRET"
+            exit 1
+          fi
+
+      - name: Run scheduled FreightTrigger jobs
+        run: |
+          run_job() {
+            endpoint="$1"
+            echo "Running $endpoint"
+            curl --fail --silent --show-error \
+              --connect-timeout 15 \
+              --max-time 75 \
+              -H "Authorization: Bearer $CRONSECRET" \
+              "$OPS_BASE_URL/api/cron/$endpoint"
+            echo
+          }
+
+          requested="${{ github.event.inputs.job }}"
+          if [ -n "$requested" ]; then
+            case "$requested" in
+              all)
+                run_job signal-scan
+                run_job prospect-acquisition
+                run_job reply-loop
+                run_job outreach-send
+                ;;
+              signal-scan|prospect-acquisition|outreach-send|reply-loop|weekly-report)
+                run_job "$requested"
+                ;;
+              *)
+                echo "Unknown job: $requested"
+                exit 1
+                ;;
+            esac
+            exit 0
+          fi
+
+          day="$(date -u +%u)"
+          time="$(date -u +%H:%M)"
+
+          case "$time" in
+            "13:00")
+              run_job signal-scan
+              ;;
+            "13:15"|"17:15"|"21:15")
+              run_job prospect-acquisition
+              ;;
+            "13:30"|"15:30"|"17:30"|"19:30"|"21:30"|"23:30")
+              run_job outreach-send
+              ;;
+            "14:00"|"18:00"|"22:00")
+              run_job reply-loop
+              if [ "$day" = "1" ] && [ "$time" = "14:00" ]; then
+                run_job weekly-report
+              fi
+              ;;
+            *)
+              echo "No FreightTrigger job mapped for $time UTC"
+              ;;
+          esac
