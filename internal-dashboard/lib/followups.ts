@@ -2,6 +2,8 @@ import { createRecords, listRecords, type AirtableRecord } from "./airtable";
 import { daysBetween } from "./time";
 
 const MAX_FOLLOWUPS_PER_RUN = 6;
+const SAMPLE_URL = "https://getfreighttrigger.com/sample-feed.html";
+const STRIPE_URL = "https://buy.stripe.com/14A8wO6R4df565JbjYfAc00";
 
 function linkedProspectId(record: AirtableRecord) {
   return (record.fields.Prospect as string[] | undefined)?.[0] || "";
@@ -13,39 +15,119 @@ function sentDate(record: AirtableRecord) {
   return date && Number.isFinite(date.getTime()) ? date : undefined;
 }
 
-function isFollowUp(record: AirtableRecord) {
-  return String(record.fields["Email Subject"] || "").toLowerCase().includes("quick follow-up");
+function subject(record: AirtableRecord) {
+  return String(record.fields["Email Subject"] || "");
+}
+
+function followUpStage(record: AirtableRecord) {
+  const value = subject(record).toLowerCase();
+  if (value.includes("[ft-fu3]")) return 3;
+  if (value.includes("[ft-fu2]")) return 2;
+  if (value.includes("[ft-fu1]") || value.includes("quick follow-up")) return 1;
+  return 0;
+}
+
+function buildFollowUp(stage: number) {
+  if (stage === 1) {
+    return {
+      subject: "[FT-FU1] Quick follow-up: food/bev shipper timing signals",
+      body: [
+        "Quick follow-up.",
+        "",
+        "FreightTrigger sends logistics sales teams a weekly food/bev shipper signal feed with source evidence, freight context, buyer path, and outreach positioning.",
+        "",
+        "Sample feed:",
+        SAMPLE_URL,
+        "",
+        "If useful, the beta feed is here:",
+        STRIPE_URL,
+        "",
+        "If this is not relevant, reply remove and I will suppress the address."
+      ].join("\n")
+    };
+  }
+
+  if (stage === 2) {
+    return {
+      subject: "[FT-FU2] Worth sending the current sample?",
+      body: [
+        "Checking once more.",
+        "",
+        "The reason FreightTrigger exists is simple: most broker prospecting starts from stale shipper lists. We look for current business movement and package it into sales-ready shipper opportunities.",
+        "",
+        "Sample feed:",
+        SAMPLE_URL,
+        "",
+        "Beta feed:",
+        STRIPE_URL,
+        "",
+        "If your team is not focused on food/bev, reefer, or distribution accounts right now, reply not a fit and I will close the loop."
+      ].join("\n")
+    };
+  }
+
+  return {
+    subject: "[FT-FU3] Closing the loop",
+    body: [
+      "Closing the loop.",
+      "",
+      "FreightTrigger is still opening beta spots for logistics sales teams that want weekly food/bev shipper timing intelligence instead of generic lead lists.",
+      "",
+      "Sample:",
+      SAMPLE_URL,
+      "",
+      "Subscribe:",
+      STRIPE_URL,
+      "",
+      "If timing is off, no reply needed. If this should go to someone else on the sales or operations side, send me the right direction."
+    ].join("\n")
+  };
 }
 
 export async function queueFollowUps() {
   const [outreach, replies] = await Promise.all([listRecords("Outreach", 100), listRecords("Replies", 100)]);
   const repliedProspects = new Set(replies.map(linkedProspectId).filter(Boolean));
-  const existingFollowUps = new Set(outreach.filter(isFollowUp).map(linkedProspectId).filter(Boolean));
-  const now = new Date();
-
-  const drafts: Record<string, unknown>[] = [];
+  const outreachByProspect = new Map<string, AirtableRecord[]>();
 
   for (const record of outreach) {
     const prospectId = linkedProspectId(record);
-    if (!prospectId || repliedProspects.has(prospectId) || existingFollowUps.has(prospectId)) continue;
-    if (record.fields.Status !== "Sent") continue;
+    if (!prospectId) continue;
+    const records = outreachByProspect.get(prospectId) || [];
+    records.push(record);
+    outreachByProspect.set(prospectId, records);
+  }
 
-    const date = sentDate(record);
-    if (!date || daysBetween(date, now) < 3) continue;
+  const now = new Date();
+  const drafts: Record<string, unknown>[] = [];
 
+  for (const [prospectId, records] of outreachByProspect) {
+    if (repliedProspects.has(prospectId)) continue;
+
+    const sentRecords = records
+      .filter((record) => record.fields.Status === "Sent")
+      .sort((a, b) => (sentDate(a)?.getTime() || 0) - (sentDate(b)?.getTime() || 0));
+    if (!sentRecords.length) continue;
+
+    const firstSent = sentDate(sentRecords[0]);
+    if (!firstSent) continue;
+
+    const sentStages = new Set(sentRecords.map(followUpStage));
+    const age = daysBetween(firstSent, now);
+    const nextStage =
+      !sentStages.has(1) && age >= 3
+        ? 1
+        : !sentStages.has(2) && age >= 6
+          ? 2
+          : !sentStages.has(3) && age >= 10
+            ? 3
+            : 0;
+    if (!nextStage) continue;
+
+    const followUp = buildFollowUp(nextStage);
     drafts.push({
-      "Email Subject": "Quick follow-up: food/bev shipper timing signals",
+      "Email Subject": followUp.subject,
       "Prospect": [prospectId],
-      "Message": [
-        "Quick follow-up.",
-        "",
-        "FreightTrigger is a weekly signal feed for logistics sales teams. It highlights food/bev shipper accounts showing freight-relevant business movement, then packages the why, likely freight read, buyer path, and outreach angle.",
-        "",
-        "Sample signal feed:",
-        "https://getfreighttrigger.com/sample-feed.html",
-        "",
-        "If this is not relevant, reply remove and I will suppress the address."
-      ].join("\n"),
+      "Message": followUp.body,
       "Status": "Queued"
     });
 

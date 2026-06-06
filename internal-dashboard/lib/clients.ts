@@ -65,7 +65,7 @@ export async function sendOnboardingEmail(client: AirtableRecord) {
     "",
     "1. FreightTrigger prepares your first food/bev and reefer-focused shipper signal feed.",
     "2. You receive evidence-backed opportunities with freight context, buyer path, scoring, and outreach positioning.",
-    "3. The weekly feed is delivered by email. Current delivery target: Wednesday business hours Eastern.",
+    "3. The weekly feed is delivered by email every Monday morning Eastern.",
     "",
     "To calibrate the feed, reply with any target geography, service focus, exclusions, or industries you do not want included.",
     "",
