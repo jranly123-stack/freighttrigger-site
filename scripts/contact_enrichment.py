@@ -140,13 +140,19 @@ def emails_from(text: str, site_domain: str) -> list[str]:
 
 
 def phones_from(text: str) -> list[str]:
-    candidates = re.findall(r"(?:\+1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}", text)
+    pattern = re.compile(r"(?:\+1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}")
     cleaned = []
-    for raw in candidates:
+    for match in pattern.finditer(text):
+        raw = match.group(0)
+        context = text[max(0, match.start() - 45) : match.end() + 45].lower()
+        if not any(token in context for token in ("phone", "tel", "call", "contact", "office", "main", "customer", "service")):
+            continue
         digits = re.sub(r"\D", "", raw)
         if len(digits) == 11 and digits.startswith("1"):
             digits = digits[1:]
         if len(digits) != 10:
+            continue
+        if digits[0] in "01" or digits[3] in "01":
             continue
         if digits.startswith(("000", "111", "123", "555")):
             continue

@@ -144,13 +144,19 @@ def clean_emails(text: str, domain: str) -> list[str]:
 
 
 def clean_phones(text: str) -> list[str]:
-    candidates = re.findall(r"(?:\+1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}", text)
+    pattern = re.compile(r"(?:\+1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}")
     cleaned = []
-    for raw in candidates:
+    for match in pattern.finditer(text):
+        raw = match.group(0)
+        context = text[max(0, match.start() - 45) : match.end() + 45].lower()
+        if not any(token in context for token in ("phone", "tel", "call", "contact", "office", "main", "customer", "service")):
+            continue
         digits = re.sub(r"\D", "", raw)
         if len(digits) == 11 and digits.startswith("1"):
             digits = digits[1:]
         if len(digits) != 10:
+            continue
+        if digits[0] in "01" or digits[3] in "01":
             continue
         if digits.startswith(("000", "111", "123", "555")):
             continue
@@ -164,6 +170,13 @@ def note_value(notes: str, label: str) -> str:
     return match.group(1).strip() if match else ""
 
 
+def upsert_note_line(notes: str, label: str, value: str) -> str:
+    line = f"{label}: {value}"
+    if re.search(rf"^{re.escape(label)}:\s*.*$", notes, re.I | re.M):
+        return re.sub(rf"^{re.escape(label)}:\s*.*$", line, notes, flags=re.I | re.M)
+    return notes.rstrip() + f"\n{line}"
+
+
 def main() -> None:
     load_env()
     companies = list_records("Companies")
@@ -174,8 +187,6 @@ def main() -> None:
     for score in scores:
         fields = score.get("fields", {})
         notes = str(fields.get("Notes", ""))
-        if "Contact path:" in notes:
-            continue
         company_id = (fields.get("Company") or [None])[0]
         company = companies_by_id.get(company_id)
         if not company:
@@ -220,7 +231,7 @@ def main() -> None:
             {
                 "id": score["id"],
                 "fields": {
-                    "Notes": notes.rstrip() + f"\nContact path: {contact_path}",
+                    "Notes": upsert_note_line(notes, "Contact path", contact_path),
                 },
             }
         )

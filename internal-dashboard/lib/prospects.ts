@@ -120,13 +120,20 @@ function extractEmails(text: string, sourceDomain: string) {
 }
 
 function extractPhones(text: string) {
-  const matches = text.match(/(?:\+1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g) ?? [];
+  const pattern = /(?:\+1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g;
   const cleaned: string[] = [];
+  let match: RegExpExecArray | null;
 
-  for (const raw of matches) {
+  while ((match = pattern.exec(text)) !== null) {
+    const raw = match[0];
+    const context = text.slice(Math.max(0, match.index - 45), match.index + raw.length + 45).toLowerCase();
+    if (!["phone", "tel", "call", "contact", "office", "main", "customer", "service"].some((token) => context.includes(token))) {
+      continue;
+    }
     let digits = raw.replace(/\D/g, "");
     if (digits.length === 11 && digits.startsWith("1")) digits = digits.slice(1);
     if (digits.length !== 10) continue;
+    if ("01".includes(digits[0]) || "01".includes(digits[3])) continue;
     if (["000", "111", "123", "555"].some((prefix) => digits.startsWith(prefix))) continue;
     cleaned.push(`(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`);
   }
