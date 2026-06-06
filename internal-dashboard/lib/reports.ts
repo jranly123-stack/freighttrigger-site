@@ -109,3 +109,46 @@ export async function deliverWeeklyReports() {
     signalRows: report.count
   };
 }
+
+export async function deliverCurrentReportToClient(client: { id: string; fields: Record<string, unknown> }, reason = "checkout") {
+  const email = normalizeEmail(client.fields.Email);
+  if (!email) return { sent: false, skipped: "missing email" };
+
+  const report = await buildWeeklyReportBody();
+  const subject = `FreightTrigger Current Signal Feed - ${new Date().toISOString().slice(0, 10)}`;
+  const body = [
+    "You do not need to wait until Monday.",
+    "",
+    "Here is the current FreightTrigger signal package. Future weekly updates arrive every Monday morning Eastern.",
+    "",
+    report.body
+  ].join("\n");
+
+  const [createdReport] = await createRecords("Reports", [
+    {
+      "Report Name": subject,
+      "Client": [client.id],
+      "Report Period": reportPeriod(),
+      "Status": "Draft",
+      "Delivery Link": SAMPLE_URL,
+      "AI Executive Summary": `Immediate ${reason} delivery with ${report.count} signal rows.`
+    }
+  ]);
+
+  await sendGmailMessage(email, subject, body);
+
+  await patchRecords("Reports", [
+    {
+      id: createdReport.id,
+      fields: {
+        Status: "Sent"
+      }
+    }
+  ]);
+
+  return {
+    sent: true,
+    to: email,
+    signalRows: report.count
+  };
+}

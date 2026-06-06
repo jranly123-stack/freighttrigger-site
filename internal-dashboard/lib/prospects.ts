@@ -246,15 +246,17 @@ function defaultEmailBody(company: string) {
   return [
     `Hi ${company} team,`,
     "",
-    "FreightTrigger is a weekly shipper trigger intelligence feed for logistics sales teams.",
+    "Quick note. I am testing FreightTrigger for logistics sales teams selling into food/bev and reefer-adjacent accounts.",
     "",
-    "Instead of another stale shipper list, the feed highlights companies showing freight-relevant business movement and packages the why, likely freight read, buyer path, and outreach angle.",
+    "It is not another shipper list. Each week we send a short signal feed showing companies with current business movement, why the timing may matter, and the angle a rep can use.",
     "",
-    `Sample feed: ${SAMPLE_URL}`,
+    "I put a partial preview here:",
+    SAMPLE_URL,
     "",
-    "Beta is $497/month and includes weekly signal records with evidence URLs, likely freight need, buyer path, outreach angle, and urgency/confidence scoring.",
+    "The preview keeps the full source trail and contact path locked, but it shows the shape.",
     "",
-    `Subscribe: ${STRIPE_URL}`,
+    "Beta is $497/month if you want the current feed now and Monday updates after that:",
+    STRIPE_URL,
     "",
     "If this is not relevant, reply not a fit and I will suppress the address.",
     "",
@@ -287,7 +289,7 @@ async function classifyProspect(title: string, url: string, text: string, emails
             role: "user",
             content:
               "Score this company as a possible buyer for a food/bev + reefer shipper trigger intelligence feed. " +
-              "Return JSON keys: include, company_name, buyer_type, target_vertical, fit_score, reason, personalization, email_subject, email_body. " +
+              "Return JSON keys: include, company_name, buyer_type, target_vertical, fit_score, reason, personalization, email_subject. " +
               "include true only for freight brokers, 3PLs, carriers, forwarders, warehousing, fulfillment, or logistics sales organizations. " +
               "Reject shippers, directories, media, load boards, job boards, and generic lists. No guaranteed lead/revenue claims. Include a soft opt-out.\n\n" +
               `Title: ${title}\nURL: ${url}\nCandidate emails: ${emails.join(", ") || "none"}\nSource text:\n${text.slice(0, 6000)}`
@@ -398,7 +400,7 @@ export async function acquireBuyerProspects(options: AcquisitionOptions = {}) {
         });
         outreach.push({
           "Email Subject": analysis.email_subject || "Food/bev shipper timing signals",
-          Message: analysis.email_body || defaultEmailBody(company),
+          Message: defaultEmailBody(company),
           Status: contactEmail ? "Queued" : "Needs Contact"
         });
         logs.push(`qualified: ${company} | ${contactEmail || "needs contact"}`);

@@ -84,13 +84,13 @@ async function classifyWithOpenAI(subject: string, body: string): Promise<ReplyI
 
 function buildSampleReply() {
   return [
-    "Here is the public sample signal feed:",
+    "Here is the partial FreightTrigger preview:",
     "",
     SAMPLE_URL,
     "",
-    "The paid beta feed includes weekly shipper opportunity records with source evidence, freight context, buyer path, priority scoring, and outreach positioning.",
+    "The preview is intentionally light. The paid beta feed includes the current records, source trail, contact path, score notes, and sales positioning.",
     "",
-    "Beta subscription:",
+    "If you want the current feed now, beta checkout is here. Monday updates continue after that:",
     CHECKOUT_URL,
     "",
     "FreightTrigger provides sales intelligence only. We do not broker freight, arrange transportation, select carriers, handle loads, manage shipments, process contracts, store shipping documents, manage invoices, or move payments between shippers and carriers."
@@ -166,7 +166,7 @@ export async function classifyRecentReplies({ force = false } = {}) {
       "Intent": intent,
       "Next Action":
         intent === "Interested" || intent === "Needs Info"
-          ? "Send sample feed and beta checkout path."
+          ? "Send preview and beta checkout path."
           : intent === "Unsubscribe"
             ? "Suppress immediately."
             : intent === "Follow-up"

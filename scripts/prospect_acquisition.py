@@ -20,6 +20,9 @@ from urllib.parse import urlparse
 ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = ROOT / "run_outputs"
 ENV_PATH = ROOT / ".env"
+SAMPLE_URL = "https://getfreighttrigger.com/sample-feed.html"
+STRIPE_URL = "https://buy.stripe.com/14A8wO6R4df565JbjYfAc00"
+PUBLIC_SITE_URL = "https://getfreighttrigger.com"
 
 QUERIES = [
     "food beverage reefer freight broker contact",
@@ -194,12 +197,11 @@ def classify_prospect(title: str, url: str, text: str, emails: list[str]) -> dic
         "You are FreightTrigger's prospect scoring agent. Score this company as a possible buyer "
         "for a weekly food/bev + reefer shipper trigger intelligence feed. Return strict JSON with "
         "keys: include, company_name, buyer_type, target_vertical, fit_score, reason, personalization, "
-        "email_subject, email_body.\n\n"
+        "email_subject.\n\n"
         "Rules: include true only for freight brokers, 3PLs, carriers, forwarders, warehousing, "
         "fulfillment, final-mile, or logistics sales organizations that could pay for shipper sales "
         "intelligence. Reject shippers, directories, media articles, load boards, job boards, and generic lists. "
-        "fit_score must be 0-100. email_body must be concise, plain text, compliant, and include no guaranteed lead/revenue claims. "
-        "Do not say FreightTrigger handles freight. Include a soft opt-out sentence.\n\n"
+        "fit_score must be 0-100. Do not say FreightTrigger handles freight.\n\n"
         f"Title: {title}\nURL: {url}\nCandidate emails: {', '.join(emails) or 'none'}\nSource text:\n{text[:6000]}"
     )
     payload = {
@@ -224,6 +226,35 @@ def classify_prospect(title: str, url: str, text: str, emails: list[str]) -> dic
         body=payload,
     )
     return json.loads(response["choices"][0]["message"]["content"])
+
+
+def outreach_body(company: str) -> str:
+    return "\n".join(
+        [
+            f"Hi {company} team,",
+            "",
+            "Quick note. I am testing FreightTrigger for logistics sales teams selling into food/bev and reefer-adjacent accounts.",
+            "",
+            "It is not another shipper list. Each week we send a short signal feed showing companies with current business movement, why the timing may matter, and the angle a rep can use.",
+            "",
+            "I put a partial preview here:",
+            SAMPLE_URL,
+            "",
+            "The preview keeps the full source trail and contact path locked, but it shows the shape.",
+            "",
+            "Beta is $497/month if you want the current feed now and Monday updates after that:",
+            STRIPE_URL,
+            "",
+            f"Website: {PUBLIC_SITE_URL}",
+            "",
+            'If this is not relevant, reply "not a fit" and I will not follow up.',
+            "",
+            "FreightTrigger",
+            "signals@getfreighttrigger.com",
+            "",
+            "FreightTrigger provides sales intelligence only. We do not broker freight, arrange transportation, select carriers, handle loads, manage shipments, process contracts, store shipping documents, manage invoices, or move payments between shippers and carriers.",
+        ]
+    )
 
 
 def main() -> None:
@@ -295,7 +326,7 @@ def main() -> None:
                     {
                         "Email Subject": analysis.get("email_subject")
                         or "Food/bev shipper timing signals",
-                        "Message": analysis.get("email_body") or "",
+                        "Message": outreach_body(analysis.get("company_name") or title[:80]),
                         "Status": "Queued" if contact_email else "Needs Contact",
                     }
                 )

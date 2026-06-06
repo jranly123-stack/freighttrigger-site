@@ -32,14 +32,14 @@ function buildFollowUp(stage: number) {
     return {
       subject: "[FT-FU1] Quick follow-up: food/bev shipper timing signals",
       body: [
-        "Quick follow-up.",
+        "Quick follow-up on FreightTrigger.",
         "",
-        "FreightTrigger sends logistics sales teams a weekly food/bev shipper signal feed with source evidence, freight context, buyer path, and outreach positioning.",
+        "The short version: we send logistics sales teams a weekly food/bev signal feed built around timing, not generic shipper names.",
         "",
-        "Sample feed:",
+        "Partial preview:",
         SAMPLE_URL,
         "",
-        "If useful, the beta feed is here:",
+        "The full beta feed includes the locked source trail, contact path, and sales position. Current feed is delivered after checkout; Monday updates continue after that:",
         STRIPE_URL,
         "",
         "If this is not relevant, reply remove and I will suppress the address."
@@ -53,9 +53,9 @@ function buildFollowUp(stage: number) {
       body: [
         "Checking once more.",
         "",
-        "The reason FreightTrigger exists is simple: most broker prospecting starts from stale shipper lists. We look for current business movement and package it into sales-ready shipper opportunities.",
+        "Most broker prospecting starts too cold. FreightTrigger is meant to show which food/bev accounts have a reason to review logistics support now.",
         "",
-        "Sample feed:",
+        "Partial preview:",
         SAMPLE_URL,
         "",
         "Beta feed:",
@@ -71,9 +71,9 @@ function buildFollowUp(stage: number) {
     body: [
       "Closing the loop.",
       "",
-      "FreightTrigger is still opening beta spots for logistics sales teams that want weekly food/bev shipper timing intelligence instead of generic lead lists.",
+      "FreightTrigger is still opening beta spots for logistics sales teams that want food/bev shipper timing intelligence instead of another static list.",
       "",
-      "Sample:",
+      "Preview:",
       SAMPLE_URL,
       "",
       "Subscribe:",

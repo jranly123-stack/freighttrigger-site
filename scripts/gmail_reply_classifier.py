@@ -181,13 +181,13 @@ def in_business_window() -> bool:
 def sample_reply() -> str:
     return "\n".join(
         [
-            "Here is the public sample FreightTrigger signal feed:",
+            "Here is the partial FreightTrigger preview:",
             "",
             SAMPLE_URL,
             "",
-            "The paid beta feed includes weekly shipper opportunity records with source evidence, freight context, contact path, priority scoring, and outreach positioning.",
+            "The preview is intentionally light. The paid beta feed includes the current records, source trail, contact path, score notes, and sales positioning.",
             "",
-            "Beta subscription:",
+            "If you want the current feed now, beta checkout is here. Monday updates continue after that:",
             CHECKOUT_URL,
             "",
             "FreightTrigger provides sales intelligence only. We do not broker freight, arrange transportation, select carriers, handle loads, manage shipments, process contracts, store shipping documents, manage invoices, or move payments between shippers and carriers.",

@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { optionalEnv } from "./local-env";
 import { sendOnboardingEmail, upsertClient } from "./clients";
+import { deliverCurrentReportToClient } from "./reports";
 
 type StripeEvent = {
   id: string;
@@ -111,14 +112,17 @@ export async function handleStripeEvent(event: StripeEvent) {
   });
 
   let onboarding;
+  let immediateDelivery;
   if (event.type === "checkout.session.completed") {
     onboarding = await sendOnboardingEmail(client);
+    immediateDelivery = await deliverCurrentReportToClient(client, "checkout");
   }
 
   return {
     handled: true,
     event: event.type,
     clientId: client.id,
-    onboarding
+    onboarding,
+    immediateDelivery
   };
 }

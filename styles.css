@@ -450,7 +450,19 @@ dl {
   border-bottom: 1px solid var(--line);
 }
 
+.sample-details div {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 18px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--line);
+}
+
 .sample-card dl div:last-child {
+  border-bottom: 0;
+}
+
+.sample-details div:last-child {
   border-bottom: 0;
 }
 
