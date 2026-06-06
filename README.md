@@ -16,15 +16,16 @@ Static one-page website for `getfreighttrigger.com`.
 - Beta and custom pricing tiers
 - Compliance disclaimer
 - Subscription, refund, privacy, and no-guarantee policies
-- Contact and business address
+- Public contact details
 
-## Business Address
+## Public Contact
 
 The footer currently uses:
 
-`3590 N Zaragoza Road, Ste B103, El Paso, TX 79938`
+- `signals@getfreighttrigger.com`
+- `getfreighttrigger.com`
 
-Update `index.html` if the verified mailbox address changes.
+Update `index.html` if the public contact details change.
 
 ## Deploy To Vercel
 
