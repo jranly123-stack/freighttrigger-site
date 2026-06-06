@@ -1,4 +1,4 @@
-import { createRecords, listRecords } from "./airtable";
+import { createRecords, listRecords, patchRecords } from "./airtable";
 import { requireEnv } from "./local-env";
 
 const SAMPLE_URL = "https://getfreighttrigger.com/sample-feed.html";
@@ -13,6 +13,21 @@ const QUERIES = [
   "food beverage freight broker contact us inurl:contact",
   "reefer logistics 3PL contact us food beverage",
   "temperature controlled freight broker contact us"
+];
+
+const CONTACT_PATHS = [
+  "",
+  "/contact",
+  "/contact-us",
+  "/contactus",
+  "/request-a-quote",
+  "/quote",
+  "/get-a-quote",
+  "/about",
+  "/about-us",
+  "/team",
+  "/sales",
+  "/locations"
 ];
 
 const NOISE_DOMAINS = [
@@ -66,6 +81,11 @@ type ProspectAnalysis = {
 type AcquisitionOptions = {
   maxQueries?: number;
   maxResultsPerQuery?: number;
+  maxProspects?: number;
+  deadlineMs?: number;
+};
+
+type EnrichmentOptions = {
   maxProspects?: number;
   deadlineMs?: number;
 };
@@ -153,6 +173,57 @@ async function serpSearch(query: string, maxResults: number) {
     { timeoutMs: 8_000 }
   );
   return data.organic_results?.slice(0, maxResults) ?? [];
+}
+
+async function searchContactSources(company: string, website: string, siteDomain: string) {
+  const queries = [
+    `site:${siteDomain} "@${siteDomain}" contact`,
+    `site:${siteDomain} ("sales@${siteDomain}" OR "info@${siteDomain}" OR "contact@${siteDomain}" OR "logistics@${siteDomain}")`,
+    `"${company}" "@${siteDomain}"`
+  ];
+  const emails: string[] = [];
+  const phones: string[] = [];
+  let sourceUrl = website;
+  const seen = new Set<string>();
+
+  for (const query of queries) {
+    const results = await serpSearch(query, 4);
+    for (const result of results) {
+      const url = result.link || "";
+      if (!url || seen.has(url)) continue;
+      seen.add(url);
+      const snippet = [result.title || "", (result as { snippet?: string }).snippet || "", url].join("\n");
+      emails.push(...extractEmails(snippet, siteDomain));
+      phones.push(...extractPhones(snippet));
+      if (emails.length || phones.length) {
+        sourceUrl = url;
+        return {
+          emails: Array.from(new Set(emails)).slice(0, 3),
+          phones: Array.from(new Set(phones)).slice(0, 4),
+          sourceUrl
+        };
+      }
+      if (domain(url) === siteDomain) {
+        const text = await scrape(url);
+        emails.push(...extractEmails(text, siteDomain));
+        phones.push(...extractPhones(text));
+        if (emails.length || phones.length) {
+          sourceUrl = url;
+          return {
+            emails: Array.from(new Set(emails)).slice(0, 3),
+            phones: Array.from(new Set(phones)).slice(0, 4),
+            sourceUrl
+          };
+        }
+      }
+    }
+  }
+
+  return {
+    emails: Array.from(new Set(emails)).slice(0, 3),
+    phones: Array.from(new Set(phones)).slice(0, 4),
+    sourceUrl
+  };
 }
 
 async function scrape(url: string) {
@@ -268,13 +339,34 @@ export async function acquireBuyerProspects(options: AcquisitionOptions = {}) {
       seenDomains.add(siteDomain);
 
       try {
-        const text = await scrape(url);
+        const pages = [];
+        for (const path of CONTACT_PATHS.slice(0, 7)) {
+          if (Date.now() - startedAt > deadlineMs) break;
+          const contactUrl = new URL(path.replace(/^\//, ""), siteRoot.endsWith("/") ? siteRoot : `${siteRoot}/`).toString();
+          const pageText = await scrape(contactUrl);
+          if (pageText) pages.push({ url: contactUrl, text: pageText });
+          if (pageText.length > 700 && (extractEmails(pageText, siteDomain).length || extractPhones(pageText).length)) break;
+          if (Date.now() - startedAt > deadlineMs) break;
+        }
+        const primary = pages[0]?.text || "";
+        const text = primary || (await scrape(url));
         if (text.length < 350) {
           logs.push(`skipped thin source: ${title}`);
           continue;
         }
-        const emails = extractEmails(text, siteDomain);
-        const phones = extractPhones(text);
+        let contactSource = url;
+        let emails = pages.flatMap((page) => extractEmails(page.text, siteDomain));
+        let phones = pages.flatMap((page) => extractPhones(page.text));
+        const bestPage = pages.find((page) => extractEmails(page.text, siteDomain).length || extractPhones(page.text).length);
+        if (bestPage) contactSource = bestPage.url;
+        if (!emails.length) {
+          const discovered = await searchContactSources(title, siteRoot, siteDomain);
+          emails = discovered.emails;
+          phones = [...phones, ...discovered.phones];
+          if (discovered.emails.length || discovered.phones.length) contactSource = discovered.sourceUrl;
+        }
+        emails = Array.from(new Set(emails)).slice(0, 3);
+        phones = Array.from(new Set(phones)).slice(0, 4);
         const analysis = await classifyProspect(title, url, text, emails);
         const fitScore = Number(analysis.fit_score || 0);
         if (!analysis.include || fitScore < 70) {
@@ -301,7 +393,7 @@ export async function acquireBuyerProspects(options: AcquisitionOptions = {}) {
             `Source: ${url}`,
             `Public emails: ${emails.length ? emails.join(", ") : "not publicly verified"}`,
             `Public phones: ${phones.length ? phones.join(", ") : "not publicly verified"}`,
-            `Contact route: ${siteRoot}/contact`
+            `Contact route: ${contactSource}`
           ].join("\n")
         });
         outreach.push({
@@ -329,6 +421,91 @@ export async function acquireBuyerProspects(options: AcquisitionOptions = {}) {
     prospectsCreated: createdProspects.length,
     outreachCreated: createdOutreach.length,
     queuedWithEmail: prospects.filter((prospect) => prospect["Contact Email"]).length,
+    logs
+  };
+}
+
+export async function enrichBuyerProspectContacts(options: EnrichmentOptions = {}) {
+  const startedAt = Date.now();
+  const deadlineMs = options.deadlineMs ?? 35_000;
+  const maxProspects = options.maxProspects ?? 4;
+  const prospects = await listRecords("Broker Prospects", 100);
+  const updates: Array<{ id: string; fields: Record<string, unknown> }> = [];
+  const logs: string[] = [];
+  let checked = 0;
+
+  for (const prospect of prospects) {
+    if (Date.now() - startedAt > deadlineMs || checked >= maxProspects) break;
+    const fields = prospect.fields;
+    if (fields["Contact Email"]) continue;
+    const website = String(fields.Website || "");
+    if (!website) continue;
+    const siteDomain = domain(website);
+    if (!siteDomain) continue;
+
+    checked += 1;
+    const company = String(fields["Company Name"] || siteDomain);
+    let emails: string[] = [];
+    let phones: string[] = [];
+    let contactSource = website;
+
+    for (const path of CONTACT_PATHS.slice(0, 7)) {
+      if (Date.now() - startedAt > deadlineMs) break;
+      const contactUrl = new URL(path.replace(/^\//, ""), website.endsWith("/") ? website : `${website}/`).toString();
+      try {
+        const text = await scrape(contactUrl);
+        emails.push(...extractEmails(text, siteDomain));
+        phones.push(...extractPhones(text));
+        if (emails.length || phones.length) {
+          contactSource = contactUrl;
+          break;
+        }
+      } catch {
+        logs.push(`contact scrape skipped: ${company} | ${path || "/"}`);
+      }
+    }
+
+    if (!emails.length) {
+      try {
+        const discovered = await searchContactSources(company, website, siteDomain);
+        emails.push(...discovered.emails);
+        phones.push(...discovered.phones);
+        if (discovered.emails.length || discovered.phones.length) contactSource = discovered.sourceUrl;
+      } catch {
+        logs.push(`contact search skipped: ${company}`);
+      }
+    }
+
+    emails = Array.from(new Set(emails)).slice(0, 3);
+    phones = Array.from(new Set(phones)).slice(0, 4);
+    if (!emails.length && !phones.length) {
+      logs.push(`needs contact route: ${company}`);
+      continue;
+    }
+
+    updates.push({
+      id: prospect.id,
+      fields: {
+        "Contact Email": emails[0] || "",
+        Status: emails[0] ? "Qualified" : "Needs Contact",
+        "Research Notes": [
+          String(fields["Research Notes"] || "").trim(),
+          `Contact enrichment route: ${contactSource}`,
+          `Public emails: ${emails.length ? emails.join(", ") : "not publicly verified"}`,
+          `Public phones: ${phones.length ? phones.join(", ") : "not publicly verified"}`
+        ]
+          .filter(Boolean)
+          .join("\n")
+      }
+    });
+    logs.push(`enriched: ${company} | ${emails[0] || "no email"} | phones=${phones.length}`);
+  }
+
+  const updated = await patchRecords("Broker Prospects", updates);
+  return {
+    checked,
+    updated: updated.length,
+    emailQualified: updates.filter((record) => record.fields["Contact Email"]).length,
     logs
   };
 }

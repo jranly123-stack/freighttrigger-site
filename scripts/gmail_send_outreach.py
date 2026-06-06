@@ -20,6 +20,14 @@ ENV_PATH = ROOT / ".env"
 FROM_EMAIL = "signals@getfreighttrigger.com"
 SEND_TZ = ZoneInfo("America/New_York")
 MAX_SENDS_PER_RUN = 5
+BAD_SOURCE_DOMAINS = (
+    "foodlogistics.com",
+    "usda.gov",
+    "carriersource.io",
+    "nfraweb.org",
+    "pdfcoffee.com",
+    "scribd.com",
+)
 
 
 def load_env() -> None:
@@ -109,6 +117,30 @@ def in_send_window(now: datetime) -> bool:
     return start <= local <= end
 
 
+def host(value: str) -> str:
+    try:
+        return urllib.parse.urlparse(value).netloc.lower().removeprefix("www.")
+    except Exception:
+        return ""
+
+
+def email_host(value: str) -> str:
+    return value.rsplit("@", 1)[1].lower().removeprefix("www.") if "@" in value else ""
+
+
+def domains_match(email: str, website: str) -> bool:
+    mail_host = email_host(email)
+    site_host = host(website)
+    if not mail_host or not site_host:
+        return False
+    return mail_host == site_host or mail_host.endswith("." + site_host) or site_host.endswith("." + mail_host)
+
+
+def bad_source(fields: dict) -> bool:
+    haystack = f"{fields.get('Website', '')}\n{fields.get('Research Notes', '')}".lower()
+    return any(domain in haystack for domain in BAD_SOURCE_DOMAINS) or "ceo gate: rejected" in haystack
+
+
 def gmail_send(token: str, to_email: str, subject: str, body: str) -> dict:
     message = EmailMessage()
     message["To"] = to_email
@@ -160,6 +192,12 @@ def main() -> None:
         prospect_fields = prospect["fields"]
         to_email = str(prospect_fields.get("Contact Email", "")).strip().lower()
         if not to_email or to_email in suppression:
+            continue
+        if prospect_fields.get("Status") != "Qualified":
+            continue
+        if bad_source(prospect_fields):
+            continue
+        if not domains_match(to_email, str(prospect_fields.get("Website", ""))):
             continue
         subject = str(fields.get("Email Subject") or "Food/bev shipper timing signals")
         body = str(fields.get("Message") or "")

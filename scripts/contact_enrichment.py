@@ -14,7 +14,23 @@ from urllib.parse import urljoin, urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 ENV_PATH = ROOT / ".env"
-CONTACT_PATHS = ["", "/contact", "/contact-us", "/about", "/about-us", "/team", "/sales"]
+HTTP_TIMEOUT = 18
+MAX_PROSPECTS_PER_RUN = 18
+MAX_SEARCH_RESULTS = 4
+CONTACT_PATHS = [
+    "",
+    "/contact",
+    "/contact-us",
+    "/contactus",
+    "/request-a-quote",
+    "/quote",
+    "/get-a-quote",
+    "/about",
+    "/about-us",
+    "/team",
+    "/sales",
+    "/locations",
+]
 BAD_PREFIXES = (
     "noreply",
     "no-reply",
@@ -34,6 +50,16 @@ BAD_PREFIXES = (
 )
 GOOD_PREFIXES = ("sales", "info", "contact", "hello", "team", "business", "shipping", "logistics")
 BAD_DOMAINS = ("zohoforms.com", "sentry.io", "example.com")
+EMAIL_SEARCH_PREFIXES = (
+    "sales",
+    "info",
+    "contact",
+    "hello",
+    "team",
+    "business",
+    "logistics",
+    "shipping",
+)
 
 
 def load_env() -> None:
@@ -51,7 +77,7 @@ def http_json(method: str, url: str, headers: dict | None = None, body: dict | N
         data = json.dumps(body).encode()
         request_headers["Content-Type"] = "application/json"
     request = urllib.request.Request(url, data=data, method=method, headers=request_headers)
-    with urllib.request.urlopen(request, timeout=45) as response:
+    with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT) as response:
         raw = response.read().decode()
         return json.loads(raw) if raw else {}
 
@@ -112,6 +138,21 @@ def scrape(url: str) -> str:
         return ""
 
 
+def serp_search(query: str) -> list[dict]:
+    try:
+        params = urllib.parse.urlencode(
+            {
+                "engine": "google",
+                "q": query,
+                "api_key": os.environ["SERPAPI_API_KEY"],
+                "num": MAX_SEARCH_RESULTS,
+            }
+        )
+        return http_json("GET", f"https://serpapi.com/search.json?{params}").get("organic_results", [])[:MAX_SEARCH_RESULTS]
+    except Exception:
+        return []
+
+
 def domain(url: str) -> str:
     return urlparse(url).netloc.lower().removeprefix("www.")
 
@@ -139,6 +180,42 @@ def emails_from(text: str, site_domain: str) -> list[str]:
     return [email for _, email in sorted(scored, reverse=True)[:3]]
 
 
+def query_contact_sources(company: str, website: str, site_domain: str) -> tuple[list[str], list[str], str]:
+    queries = [
+        f'site:{site_domain} "@{site_domain}" contact',
+        f'site:{site_domain} ("sales@{site_domain}" OR "info@{site_domain}" OR "contact@{site_domain}" OR "logistics@{site_domain}")',
+        f'"{company}" "@{site_domain}"',
+    ]
+    emails: list[str] = []
+    phones: list[str] = []
+    source_url = website
+    seen_urls: set[str] = set()
+
+    for query in queries:
+        for result in serp_search(query):
+            url = str(result.get("link") or "")
+            if not url or url in seen_urls:
+                continue
+            seen_urls.add(url)
+            snippet = "\n".join(
+                str(result.get(key) or "")
+                for key in ("title", "snippet", "displayed_link")
+            )
+            emails.extend(emails_from(snippet, site_domain))
+            phones.extend(phones_from(snippet))
+            if emails or phones:
+                source_url = url
+                return list(dict.fromkeys(emails)), list(dict.fromkeys(phones)), source_url
+            if domain(url) == site_domain:
+                text = scrape(url)
+                emails.extend(emails_from(text, site_domain))
+                phones.extend(phones_from(text))
+                if emails or phones:
+                    source_url = url
+                    return list(dict.fromkeys(emails)), list(dict.fromkeys(phones)), source_url
+    return list(dict.fromkeys(emails)), list(dict.fromkeys(phones)), source_url
+
+
 def phones_from(text: str) -> list[str]:
     pattern = re.compile(r"(?:\+1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}")
     cleaned = []
@@ -164,6 +241,7 @@ def main() -> None:
     load_env()
     prospects = list_records("Broker Prospects")
     updates = []
+    checked = 0
     for prospect in prospects:
         fields = prospect.get("fields", {})
         if fields.get("Contact Email"):
@@ -171,6 +249,10 @@ def main() -> None:
         website = fields.get("Website")
         if not website:
             continue
+        checked += 1
+        if checked > MAX_PROSPECTS_PER_RUN:
+            break
+        print(f"checking contact routes: {fields.get('Company Name')}")
         site_domain = domain(str(website))
         found: list[str] = []
         phones: list[str] = []
@@ -183,8 +265,18 @@ def main() -> None:
             if found or phones:
                 contact_url = url
                 break
+        if not found:
+            search_emails, search_phones, search_url = query_contact_sources(
+                str(fields.get("Company Name") or ""),
+                str(website),
+                site_domain,
+            )
+            found.extend(search_emails)
+            phones.extend(search_phones)
+            if search_emails or search_phones:
+                contact_url = search_url
         found = list(dict.fromkeys(found))
-        phones = list(dict.fromkeys(phones))
+        phones = list(dict.fromkeys(phones))[:4]
         if not found and not phones:
             print(f"needs manual contact path: {fields.get('Company Name')}")
             continue

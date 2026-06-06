@@ -8,12 +8,18 @@ import json
 import os
 import urllib.parse
 import urllib.request
-from datetime import date
+from datetime import date, datetime, timezone
+from email.message import EmailMessage
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parents[1]
 ENV_PATH = ROOT / ".env"
 FROM_EMAIL = "signals@getfreighttrigger.com"
+SAMPLE_URL = "https://getfreighttrigger.com/sample-feed.html"
+CHECKOUT_URL = "https://buy.stripe.com/14A8wO6R4df565JbjYfAc00"
+SEND_TZ = ZoneInfo("America/New_York")
+MAX_AUTO_REPLIES = 3
 
 
 def load_env() -> None:
@@ -62,6 +68,17 @@ def gmail(token: str, method: str, path: str, body: dict | None = None) -> dict:
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
         body=body,
     )
+
+
+def gmail_send(token: str, to_email: str, subject: str, body: str) -> dict:
+    message = EmailMessage()
+    message["To"] = to_email
+    message["From"] = FROM_EMAIL
+    message["Subject"] = subject
+    message["Reply-To"] = FROM_EMAIL
+    message.set_content(body)
+    raw = base64.urlsafe_b64encode(message.as_bytes()).decode().rstrip("=")
+    return gmail(token, "POST", "messages/send", {"raw": raw})
 
 
 def decode_body(payload: dict) -> str:
@@ -135,6 +152,17 @@ def create_record(table: str, fields: dict) -> None:
     )
 
 
+def patch_records(table: str, records: list[dict]) -> None:
+    if not records:
+        return
+    http_json(
+        "PATCH",
+        airtable_url(table),
+        headers={"Authorization": f"Bearer {os.environ['AIRTABLE_API_TOKEN']}"},
+        body={"typecast": True, "records": records},
+    )
+
+
 def sender_from(headers: list[dict]) -> str:
     for header in headers:
         if header.get("name", "").lower() == "from":
@@ -143,6 +171,62 @@ def sender_from(headers: list[dict]) -> str:
                 return value.split("<", 1)[1].split(">", 1)[0].lower()
             return value.lower()
     return ""
+
+
+def in_business_window() -> bool:
+    local = datetime.now(timezone.utc).astimezone(SEND_TZ)
+    return local.weekday() <= 4 and 9 <= local.hour < 20
+
+
+def sample_reply() -> str:
+    return "\n".join(
+        [
+            "Here is the public sample FreightTrigger signal feed:",
+            "",
+            SAMPLE_URL,
+            "",
+            "The paid beta feed includes weekly shipper opportunity records with source evidence, freight context, contact path, priority scoring, and outreach positioning.",
+            "",
+            "Beta subscription:",
+            CHECKOUT_URL,
+            "",
+            "FreightTrigger provides sales intelligence only. We do not broker freight, arrange transportation, select carriers, handle loads, manage shipments, process contracts, store shipping documents, manage invoices, or move payments between shippers and carriers.",
+        ]
+    )
+
+
+def prospect_by_email(prospects: list[dict], email: str) -> dict | None:
+    for prospect in prospects:
+        if str(prospect.get("fields", {}).get("Contact Email", "")).strip().lower() == email:
+            return prospect
+    return None
+
+
+def update_prospect(prospect: dict | None, intent: str, summary: str) -> None:
+    if not prospect:
+        return
+    status = (
+        "Qualified"
+        if intent in {"Interested", "Needs Info"}
+        else "Suppressed"
+        if intent == "Unsubscribe"
+        else "Contacted"
+        if intent == "Follow-up"
+        else "Unresponsive"
+    )
+    notes = str(prospect.get("fields", {}).get("Research Notes", "")).strip()
+    patch_records(
+        "Broker Prospects",
+        [
+            {
+                "id": prospect["id"],
+                "fields": {
+                    "Status": status,
+                    "Research Notes": f"{notes}\n{datetime.now(timezone.utc).isoformat()} reply feedback: {summary}".strip(),
+                },
+            }
+        ],
+    )
 
 
 def main() -> None:
@@ -159,7 +243,9 @@ def main() -> None:
         str(record.get("fields", {}).get("Reply Summary", ""))
         for record in list_records("Replies")
     }
+    prospects = list_records("Broker Prospects")
     processed = 0
+    auto_replies = 0
     for item in results.get("messages", []) or []:
         message = gmail(token, "GET", f"messages/{item['id']}?format=full")
         headers = message.get("payload", {}).get("headers", [])
@@ -171,21 +257,30 @@ def main() -> None:
         if any(marker in summary for summary in existing):
             continue
         result = classify(text)
+        intent = result.get("intent", "Needs Info")
+        prospect = prospect_by_email(prospects, sender)
+        summary = f"{marker} {result.get('summary', text[:500])}"
         create_record(
             "Replies",
             {
-                "Reply Summary": f"{marker} {result.get('summary', text[:500])}",
-                "Intent": result.get("intent", "Needs Info"),
+                "Reply Summary": summary,
+                "Prospect": [prospect["id"]] if prospect else [],
+                "Intent": intent,
                 "Next Action": result.get("next_action", "Review reply."),
             },
         )
+        update_prospect(prospect, intent, summary)
         if result.get("suppress"):
             create_record(
                 "Suppression List",
                 {"Email": sender, "Reason": "Reply requested no further contact", "Date Added": str(date.today())},
             )
+        if intent in {"Interested", "Needs Info"} and in_business_window() and auto_replies < MAX_AUTO_REPLIES:
+            gmail_send(token, sender, "FreightTrigger sample signal feed", sample_reply())
+            auto_replies += 1
         processed += 1
     print(f"classified {processed} recent inbox replies")
+    print(f"auto-sent {auto_replies} sample/checkout replies")
 
 
 if __name__ == "__main__":

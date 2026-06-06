@@ -3,6 +3,38 @@ import { sendGmailMessage } from "./gmail";
 import { inBusinessWindow } from "./time";
 
 const MAX_SENDS_PER_RUN = 3;
+const BAD_SOURCE_DOMAINS = [
+  "foodlogistics.com",
+  "usda.gov",
+  "carriersource.io",
+  "nfraweb.org",
+  "pdfcoffee.com",
+  "scribd.com"
+];
+
+function host(value: unknown) {
+  try {
+    return new URL(String(value || "")).hostname.toLowerCase().replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
+function emailHost(email: string) {
+  return email.includes("@") ? email.split("@").pop() || "" : "";
+}
+
+function domainsMatch(email: string, website: unknown) {
+  const mailHost = emailHost(email).toLowerCase().replace(/^www\./, "");
+  const siteHost = host(website);
+  if (!mailHost || !siteHost) return false;
+  return mailHost === siteHost || mailHost.endsWith(`.${siteHost}`) || siteHost.endsWith(`.${mailHost}`);
+}
+
+function badSource(prospect: Record<string, unknown>) {
+  const haystack = `${String(prospect.Website || "")}\n${String(prospect["Research Notes"] || "")}`.toLowerCase();
+  return BAD_SOURCE_DOMAINS.some((domain) => haystack.includes(domain)) || haystack.includes("ceo gate: rejected");
+}
 
 export async function sendQueuedOutreach({ force = false } = {}) {
   const now = new Date();
@@ -33,6 +65,9 @@ export async function sendQueuedOutreach({ force = false } = {}) {
     const prospect = prospectId ? prospectsById.get(prospectId) : undefined;
     const email = String(prospect?.fields["Contact Email"] || "").trim().toLowerCase();
     if (!email || suppressed.has(email)) continue;
+    if (prospect?.fields.Status !== "Qualified") continue;
+    if (badSource(prospect.fields)) continue;
+    if (!domainsMatch(email, prospect.fields.Website)) continue;
 
     await sendGmailMessage(
       email,
