@@ -1,4 +1,4 @@
-import { requireEnv } from "./local-env";
+import { optionalEnv, requireEnv } from "./local-env";
 import type { Candidate } from "./engine";
 
 export type AirtableRecord = {
@@ -19,7 +19,9 @@ const TABLES = [
 ];
 
 function baseUrl(table: string) {
-  const base = requireEnv("AIRTABLE_BASE_ID");
+  const rawBase = optionalEnv("AIRTABLE_BASE_ID", "AIRTABLEBASEID");
+  if (!rawBase) throw new Error("Missing required environment variable: AIRTABLE_BASE_ID");
+  const base = rawBase.match(/app[A-Za-z0-9]{14,}/)?.[0] ?? rawBase.trim();
   return `https://api.airtable.com/v0/${base}/${encodeURIComponent(table)}`;
 }
 

@@ -7,6 +7,7 @@ import argparse
 import base64
 import json
 import os
+import re
 import time
 import urllib.parse
 import urllib.request
@@ -70,7 +71,10 @@ def refresh_access_token() -> str:
 
 
 def airtable_url(table: str, query: dict | None = None) -> str:
-    url = f"https://api.airtable.com/v0/{os.environ['AIRTABLE_BASE_ID']}/{urllib.parse.quote(table)}"
+    raw_base = os.environ.get("AIRTABLE_BASE_ID") or os.environ.get("AIRTABLEBASEID", "")
+    match = re.search(r"app[A-Za-z0-9]{14,}", raw_base)
+    base = match.group(0) if match else raw_base.strip()
+    url = f"https://api.airtable.com/v0/{base}/{urllib.parse.quote(table)}"
     if query:
         url += "?" + urllib.parse.urlencode(query, doseq=True)
     return url

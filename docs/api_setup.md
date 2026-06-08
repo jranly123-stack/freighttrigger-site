@@ -17,7 +17,7 @@ Use `.env.example` as the template for local credentials.
 - `DATAFORSEOLOGIN` - DataForSEO API login for buyer and signal radar. Hosted Vercel variable name.
 - `DATAFORSEOPASSWORD` - DataForSEO API password. Hosted Vercel variable name.
 - `AIRTABLE_API_TOKEN` - Airtable API access.
-- `AIRTABLE_BASE_ID` - FreightTrigger Airtable base ID.
+- `AIRTABLE_BASE_ID` - FreightTrigger Airtable base ID. The code extracts `app...` if a full Airtable URL is pasted.
 - `SAM_GOV_API_KEY` - public procurement opportunity source.
 - `GOOGLE_CLIENT_ID` - Gmail API OAuth client ID.
 - `GOOGLE_CLIENT_SECRET` - Gmail API OAuth client secret.
@@ -30,6 +30,7 @@ The code also accepts underscore aliases locally:
 
 - `DATAFORSEO_LOGIN`
 - `DATAFORSEO_PASSWORD`
+- `AIRTABLEBASEID`
 - `CLAY_API_KEY`
 - `CLAY_WEBHOOK_URL`
 
@@ -121,3 +122,17 @@ Implementation boundary:
 - With `CLAYAPIKEY` only, FreightTrigger records Clay as available and logs records that need enrichment.
 - With `CLAYWEBHOOKURL`, FreightTrigger sends weak-contact prospects into the Clay workflow automatically.
 - Airtable remains the system memory; Clay is not the final database.
+
+## Airtable Validation
+
+Run:
+
+`python3 scripts/validate_airtable.py`
+
+Expected result:
+
+- all required tables return `OK`
+- no secrets are printed
+- copied Airtable URLs are normalized to the underlying `app...` base ID
+
+If every table returns `404`, the base ID/token pair is wrong or the token lacks access to that base.

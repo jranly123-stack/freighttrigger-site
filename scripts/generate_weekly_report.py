@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import urllib.parse
 import urllib.request
 from datetime import date
@@ -36,10 +37,10 @@ def list_records(table: str) -> list[dict]:
         query = {"pageSize": 100}
         if offset:
             query["offset"] = offset
-        url = (
-            f"https://api.airtable.com/v0/{os.environ['AIRTABLE_BASE_ID']}/{urllib.parse.quote(table)}?"
-            + urllib.parse.urlencode(query)
-        )
+        raw_base = os.environ.get("AIRTABLE_BASE_ID") or os.environ.get("AIRTABLEBASEID", "")
+        match = re.search(r"app[A-Za-z0-9]{14,}", raw_base)
+        base = match.group(0) if match else raw_base.strip()
+        url = f"https://api.airtable.com/v0/{base}/{urllib.parse.quote(table)}?" + urllib.parse.urlencode(query)
         payload = http_json(url)
         records.extend(payload.get("records", []))
         offset = payload.get("offset")
