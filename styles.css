@@ -645,7 +645,8 @@ dd {
 .record-topline strong {
   display: block;
   margin-top: 7px;
-  font-size: 22px;
+  font-size: 19px;
+  line-height: 1.2;
 }
 
 .record-grid {
@@ -795,6 +796,16 @@ dd {
 
   .site-footer address {
     text-align: left;
+  }
+
+  .record-topline,
+  .record-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .record-topline div,
+  .record-grid div {
+    border-right: 0;
   }
 }
 
