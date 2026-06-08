@@ -1,5 +1,6 @@
 import { createRecords, listRecords, patchRecords } from "./airtable";
 import { requireEnv } from "./local-env";
+import { clayConfigured, searchWeb } from "./search";
 
 const SAMPLE_URL = "https://getfreighttrigger.com/sample-feed.html";
 const STRIPE_URL = "https://buy.stripe.com/14A8wO6R4df565JbjYfAc00";
@@ -161,20 +162,6 @@ function extractPhones(text: string) {
   return Array.from(new Set(cleaned)).slice(0, 4);
 }
 
-async function serpSearch(query: string, maxResults: number) {
-  const params = new URLSearchParams({
-    engine: "google",
-    q: query,
-    api_key: requireEnv("SERPAPI_API_KEY"),
-    num: String(maxResults)
-  });
-  const data = await jsonFetch<{ organic_results?: Array<{ title?: string; link?: string }> }>(
-    `https://serpapi.com/search.json?${params.toString()}`,
-    { timeoutMs: 8_000 }
-  );
-  return data.organic_results?.slice(0, maxResults) ?? [];
-}
-
 async function searchContactSources(company: string, website: string, siteDomain: string) {
   const queries = [
     `site:${siteDomain} "@${siteDomain}" contact`,
@@ -187,7 +174,7 @@ async function searchContactSources(company: string, website: string, siteDomain
   const seen = new Set<string>();
 
   for (const query of queries) {
-    const results = await serpSearch(query, 4);
+    const results = await searchWeb(query, 4);
     for (const result of results) {
       const url = result.link || "";
       if (!url || seen.has(url)) continue;
@@ -246,19 +233,21 @@ function defaultEmailBody(company: string) {
   return [
     `Hi ${company} team,`,
     "",
-    "Quick note. I am testing FreightTrigger for logistics sales teams selling into food/bev and reefer-adjacent accounts.",
+    "I found your team while mapping logistics providers that sell into food, beverage, refrigerated, or time-sensitive freight.",
     "",
-    "It is not another shipper list. Each week we send a short signal feed showing companies with current business movement, why the timing may matter, and the angle a rep can use.",
+    "FreightTrigger sends a short weekly signal feed for reps who need a better reason to call than a stale shipper list.",
     "",
-    "I put a partial preview here:",
+    "The feed points to companies showing freight-relevant business movement, then packages the evidence, contact route, freight read, and opener into a sales-ready record.",
+    "",
+    "A partial preview is here:",
     SAMPLE_URL,
     "",
-    "The preview keeps the full source trail and contact path locked, but it shows the shape.",
+    "The preview shows the format. The paid feed includes the source trail, scoring notes, buyer path, and outreach positioning.",
     "",
-    "Beta is $497/month if you want the current feed now and Monday updates after that:",
+    "Beta is $497/month. Checkout delivers the current feed immediately, then Monday updates continue for the week ahead:",
     STRIPE_URL,
     "",
-    "If this is not relevant, reply not a fit and I will suppress the address.",
+    "If this is not relevant, reply \"not a fit\" and I will suppress the address.",
     "",
     "FreightTrigger",
     "signals@getfreighttrigger.com",
@@ -327,7 +316,8 @@ export async function acquireBuyerProspects(options: AcquisitionOptions = {}) {
   for (const query of QUERIES.slice(0, maxQueries)) {
     if (Date.now() - startedAt > deadlineMs) break;
     logs.push(`search: ${query}`);
-    const results = await serpSearch(query, maxResultsPerQuery);
+    const results = await searchWeb(query, maxResultsPerQuery);
+    logs.push(`radar source: ${results[0]?.source || "no-search-results"} | clay=${clayConfigured() ? "configured" : "not-configured"}`);
 
     for (const result of results) {
       if (Date.now() - startedAt > deadlineMs || prospects.length >= maxProspects) break;

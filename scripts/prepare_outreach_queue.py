@@ -108,12 +108,13 @@ def patch_records(table: str, records: list[dict]) -> list[dict]:
 def build_message(company: str) -> str:
     return (
         f"Hi {company} team,\n\n"
-        "Quick note. I am testing FreightTrigger for logistics sales teams selling into food/bev and reefer-adjacent accounts.\n\n"
-        "It is not another shipper list. Each week we send a short signal feed showing companies with current business movement, why the timing may matter, and the angle a rep can use.\n\n"
-        "I put a partial preview here:\n"
+        "I found your team while mapping logistics providers that sell into food, beverage, refrigerated, or time-sensitive freight.\n\n"
+        "FreightTrigger sends a short weekly signal feed for reps who need a better reason to call than a stale shipper list.\n\n"
+        "The feed points to companies showing freight-relevant business movement, then packages the evidence, contact route, freight read, and opener into a sales-ready record.\n\n"
+        "A partial preview is here:\n"
         f"{SAMPLE_URL}\n\n"
-        "The preview keeps the full source trail and contact path locked, but it shows the shape.\n\n"
-        "Beta is $497/month if you want the current feed now and Monday updates after that:\n"
+        "The preview shows the format. The paid feed includes the source trail, scoring notes, buyer path, and outreach positioning.\n\n"
+        "Beta is $497/month. Checkout delivers the current feed immediately, then Monday updates continue for the week ahead:\n"
         f"{STRIPE_URL}\n\n"
         f"Website: {PUBLIC_SITE_URL}\n\n"
         "If this is not relevant, reply \"not a fit\" and I will not follow up.\n\n"

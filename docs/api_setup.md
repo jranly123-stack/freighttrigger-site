@@ -14,6 +14,8 @@ Use `.env.example` as the template for local credentials.
 - `OPENAI_API_KEY` - model calls for scoring, summarization, classification, and outreach drafting.
 - `FIRECRAWL_API_KEY` - web extraction and evidence capture.
 - `SERPAPI_API_KEY` - search discovery at scale.
+- `DATAFORSEOLOGIN` - DataForSEO API login for buyer and signal radar. Hosted Vercel variable name.
+- `DATAFORSEOPASSWORD` - DataForSEO API password. Hosted Vercel variable name.
 - `AIRTABLE_API_TOKEN` - Airtable API access.
 - `AIRTABLE_BASE_ID` - FreightTrigger Airtable base ID.
 - `SAM_GOV_API_KEY` - public procurement opportunity source.
@@ -21,6 +23,13 @@ Use `.env.example` as the template for local credentials.
 - `GOOGLE_CLIENT_SECRET` - Gmail API OAuth client secret.
 - `GOOGLE_REDIRECT_URI` - local OAuth callback URL. Default: `http://localhost:8765/oauth2callback`.
 - `GMAIL_REFRESH_TOKEN` - long-lived Gmail OAuth token created by the local setup helper.
+- `CLAYAPIKEY` - Clay workspace API key when API access is available.
+
+The code also accepts underscore aliases locally:
+
+- `DATAFORSEO_LOGIN`
+- `DATAFORSEO_PASSWORD`
+- `CLAY_API_KEY`
 
 ## Later Variables
 
@@ -90,3 +99,17 @@ Do not paste the refresh token into chat. It is equivalent to long-lived inbox a
 The public website does not use these keys. These credentials are for the later FreightTrigger operating engine:
 
 `search -> extract -> classify -> score -> report -> outreach/reply handling`
+
+## DataForSEO And Clay
+
+DataForSEO is the radar layer. It finds candidate pages, companies, search results, and source URLs for buyer discovery and shipper-signal discovery.
+
+Clay is the enrichment/workflow layer. It improves company/contact records after a target has been discovered. It should not replace Airtable as the system of record unless the operating model changes.
+
+Current flow:
+
+`DataForSEO -> Firecrawl -> OpenAI/FreightTrigger scoring -> Airtable -> Gmail/report engine`
+
+Clay is added at the enrichment step:
+
+`Qualified prospect/signal -> Clay enrichment -> Airtable contact/source fields -> outreach/report decision`

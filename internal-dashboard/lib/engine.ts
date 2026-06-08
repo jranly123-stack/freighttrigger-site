@@ -1,4 +1,5 @@
 import { requireEnv } from "./local-env";
+import { searchWeb } from "./search";
 
 const QUERIES = [
   "food distributor expansion distribution center refrigerated 2026",
@@ -53,20 +54,6 @@ async function jsonFetch<T>(url: string, init?: RequestInit & { timeoutMs?: numb
     throw new Error(`${response.status}: ${text.slice(0, 220)}`);
   }
   return response.json() as Promise<T>;
-}
-
-async function serpSearch(query: string, maxResults: number) {
-  const params = new URLSearchParams({
-    engine: "google",
-    q: query,
-    api_key: requireEnv("SERPAPI_API_KEY"),
-    num: String(maxResults)
-  });
-  const data = await jsonFetch<{ organic_results?: Array<{ title?: string; link?: string }> }>(
-    `https://serpapi.com/search.json?${params.toString()}`,
-    { timeoutMs: 8_000 }
-  );
-  return data.organic_results?.slice(0, maxResults) ?? [];
 }
 
 async function scrape(url: string) {
@@ -134,7 +121,8 @@ export async function runEngine(options: EngineOptions = {}) {
       break;
     }
 
-    const results = await serpSearch(query, maxResultsPerQuery);
+    const results = await searchWeb(query, maxResultsPerQuery);
+    logs.push(`radar: ${query} | ${results[0]?.source || "no-search-results"}`);
     for (const result of results) {
       if (Date.now() - startedAt > deadlineMs) {
         logs.push("stopped: engine deadline reached before next source");
