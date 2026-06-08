@@ -24,12 +24,14 @@ Use `.env.example` as the template for local credentials.
 - `GOOGLE_REDIRECT_URI` - local OAuth callback URL. Default: `http://localhost:8765/oauth2callback`.
 - `GMAIL_REFRESH_TOKEN` - long-lived Gmail OAuth token created by the local setup helper.
 - `CLAYAPIKEY` - Clay workspace API key when API access is available.
+- `CLAYWEBHOOKURL` - optional Clay webhook/workflow URL for automated enrichment handoff.
 
 The code also accepts underscore aliases locally:
 
 - `DATAFORSEO_LOGIN`
 - `DATAFORSEO_PASSWORD`
 - `CLAY_API_KEY`
+- `CLAY_WEBHOOK_URL`
 
 ## Later Variables
 
@@ -113,3 +115,9 @@ Current flow:
 Clay is added at the enrichment step:
 
 `Qualified prospect/signal -> Clay enrichment -> Airtable contact/source fields -> outreach/report decision`
+
+Implementation boundary:
+
+- With `CLAYAPIKEY` only, FreightTrigger records Clay as available and logs records that need enrichment.
+- With `CLAYWEBHOOKURL`, FreightTrigger sends weak-contact prospects into the Clay workflow automatically.
+- Airtable remains the system memory; Clay is not the final database.

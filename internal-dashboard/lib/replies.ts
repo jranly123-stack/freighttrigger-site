@@ -84,11 +84,11 @@ async function classifyWithOpenAI(subject: string, body: string): Promise<ReplyI
 
 function buildSampleReply() {
   return [
-    "Here is the partial FreightTrigger preview:",
+    "Here is the FreightTrigger preview:",
     "",
     SAMPLE_URL,
     "",
-    "The preview is intentionally light. The paid beta feed includes the current records, source trail, contact path, score notes, and sales positioning.",
+    "The preview shows the format. The paid beta feed includes current records with source context, contact route, scoring notes, and sales positioning.",
     "",
     "If you want the current feed now, beta checkout is here. Monday updates continue after that:",
     CHECKOUT_URL,

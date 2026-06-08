@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">FreightTrigger avatar</title>
+  <desc id="desc">FreightTrigger FT monogram with signal trigger mark.</desc>
+  <defs>
+    <linearGradient id="bg" x1="124" y1="900" x2="900" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0b1117"/>
+      <stop offset="0.56" stop-color="#121a22"/>
+      <stop offset="1" stop-color="#1a222b"/>
+    </linearGradient>
+    <linearGradient id="trigger" x1="652" y1="296" x2="846" y2="206" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d9583f"/>
+      <stop offset="1" stop-color="#ff9a4c"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="22" stdDeviation="20" flood-color="#020406" flood-opacity="0.34"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" rx="214" fill="url(#bg)"/>
+
+  <g opacity="0.14" fill="none" stroke="#edf2f7" stroke-width="16">
+    <path d="M176 724h672"/>
+    <path d="M176 520h672"/>
+    <path d="M176 316h672"/>
+    <path d="M316 176v672"/>
+    <path d="M520 176v672"/>
+    <path d="M724 176v672"/>
+  </g>
+
+  <g fill="none" stroke="url(#trigger)" stroke-linecap="round">
+    <path d="M642 296c55-46 130-55 193-21" stroke-width="26"/>
+    <path d="M674 352c37-28 86-33 129-12" stroke-width="20" opacity="0.76"/>
+    <path d="M706 408c21-14 49-17 73-6" stroke-width="16" opacity="0.58"/>
+  </g>
+
+  <circle cx="646" cy="292" r="34" fill="url(#trigger)"/>
+  <circle cx="646" cy="292" r="62" fill="none" stroke="#ff8a4a" stroke-width="8" opacity="0.32"/>
+
+  <g filter="url(#softShadow)">
+    <path d="M216 274h356v100H340v116h198v96H340v224H216V274z" fill="#f7fafc"/>
+    <path d="M576 274h276v100h-76v436H652V374h-76V274z" fill="#f7fafc"/>
+  </g>
+
+  <path d="M216 858h592" stroke="#d9583f" stroke-width="30" stroke-linecap="round"/>
+</svg>

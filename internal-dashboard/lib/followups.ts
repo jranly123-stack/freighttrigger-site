@@ -39,7 +39,7 @@ function buildFollowUp(stage: number) {
         "Partial preview:",
         SAMPLE_URL,
         "",
-        "The full beta feed includes the locked source trail, contact path, and sales position. Current feed is delivered after checkout; Monday updates continue after that:",
+        "The beta feed includes the current records with source context, contact route, scoring notes, and sales positioning. Current feed is delivered after checkout; Monday updates continue after that:",
         STRIPE_URL,
         "",
         "If this is not relevant, reply remove and I will suppress the address."
@@ -53,7 +53,7 @@ function buildFollowUp(stage: number) {
       body: [
         "Checking once more.",
         "",
-        "Most broker prospecting starts too cold. FreightTrigger is meant to show which food/bev accounts have a reason to review logistics support now.",
+        "Most broker prospecting starts too cold. FreightTrigger is meant to show which food/bev accounts have a timely business event worth using in the first touch.",
         "",
         "Partial preview:",
         SAMPLE_URL,

@@ -1,6 +1,7 @@
 import { createRecords, listRecords, patchRecords } from "./airtable";
+import { clayStatus, sendClayEnrichmentRequest } from "./clay";
 import { requireEnv } from "./local-env";
-import { clayConfigured, searchWeb } from "./search";
+import { searchWeb } from "./search";
 
 const SAMPLE_URL = "https://getfreighttrigger.com/sample-feed.html";
 const STRIPE_URL = "https://buy.stripe.com/14A8wO6R4df565JbjYfAc00";
@@ -317,7 +318,10 @@ export async function acquireBuyerProspects(options: AcquisitionOptions = {}) {
     if (Date.now() - startedAt > deadlineMs) break;
     logs.push(`search: ${query}`);
     const results = await searchWeb(query, maxResultsPerQuery);
-    logs.push(`radar source: ${results[0]?.source || "no-search-results"} | clay=${clayConfigured() ? "configured" : "not-configured"}`);
+    const clay = clayStatus();
+    logs.push(
+      `radar source: ${results[0]?.source || "no-search-results"} | clay-api=${clay.apiKey ? "configured" : "not-configured"} | clay-webhook=${clay.webhookUrl ? "configured" : "not-configured"}`
+    );
 
     for (const result of results) {
       if (Date.now() - startedAt > deadlineMs || prospects.length >= maxProspects) break;
@@ -471,9 +475,41 @@ export async function enrichBuyerProspectContacts(options: EnrichmentOptions = {
     emails = Array.from(new Set(emails)).slice(0, 3);
     phones = Array.from(new Set(phones)).slice(0, 4);
     if (!emails.length && !phones.length) {
-      logs.push(`needs contact route: ${company}`);
+      const clayResult = await sendClayEnrichmentRequest({
+        airtableRecordId: prospect.id,
+        companyName: company,
+        website,
+        sourceUrl: website,
+        reason: "No direct public email or phone found during FreightTrigger contact enrichment."
+      });
+      updates.push({
+        id: prospect.id,
+        fields: {
+          Status: "Needs Contact",
+          "Research Notes": [
+            String(fields["Research Notes"] || "").trim(),
+            `Clay enrichment: ${clayResult.status} | ${clayResult.note}`
+          ]
+            .filter(Boolean)
+            .join("\n")
+        }
+      });
+      logs.push(`needs contact route: ${company} | clay=${clayResult.status}`);
       continue;
     }
+
+    const clayResult =
+      emails.length < 2 && phones.length < 1
+        ? await sendClayEnrichmentRequest({
+            airtableRecordId: prospect.id,
+            companyName: company,
+            website,
+            email: emails[0],
+            phone: phones[0],
+            sourceUrl: contactSource,
+            reason: "Public contact route exists but confidence is thin; request secondary enrichment."
+          })
+        : null;
 
     updates.push({
       id: prospect.id,
@@ -484,7 +520,8 @@ export async function enrichBuyerProspectContacts(options: EnrichmentOptions = {
           String(fields["Research Notes"] || "").trim(),
           `Contact enrichment route: ${contactSource}`,
           `Public emails: ${emails.length ? emails.join(", ") : "not publicly verified"}`,
-          `Public phones: ${phones.length ? phones.join(", ") : "not publicly verified"}`
+          `Public phones: ${phones.length ? phones.join(", ") : "not publicly verified"}`,
+          clayResult ? `Clay enrichment: ${clayResult.status} | ${clayResult.note}` : ""
         ]
           .filter(Boolean)
           .join("\n")
