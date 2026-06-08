@@ -61,19 +61,42 @@ export async function sendOnboardingEmail(client: AirtableRecord) {
   const body = [
     "You're in for the Beta FreightTrigger Signal Feed.",
     "",
-    "What happens next:",
+    "What you bought:",
     "",
-    "1. FreightTrigger sends the current food/bev and reefer-focused signal package immediately after checkout.",
-    "2. Future weekly feeds arrive every Monday morning Eastern.",
-    "3. Each feed separates observed evidence from FreightTrigger's freight read, contact path, scoring, and outreach positioning.",
+    "A weekly food/bev and reefer-focused shipper timing feed for logistics sales teams. Each record is built to answer: who should your team look at, why now, what changed, what freight need may be implied, how to route contact, and what angle to use.",
     "",
-    "To calibrate the feed, reply with any target geography, service focus, exclusions, or industries you do not want included.",
+    "Delivery:",
+    "",
+    "1. Your current signal package is sent immediately after checkout in a separate email.",
+    "2. Future signal feeds arrive every Monday morning Eastern.",
+    "3. The feed includes evidence links, freight read, buyer/contact path, urgency/confidence scoring, and suggested outreach positioning.",
+    "4. If a record is not useful, reply with the reason so future feeds tighten around your market.",
+    "",
+    "Fast calibration:",
+    "",
+    "Reply with any target geography, service focus, exclusions, or industries you do not want included. Examples:",
+    "",
+    "- Southeast reefer only",
+    "- FTL, no parcel",
+    "- exclude enterprise retailers",
+    "- more produce and cold storage",
+    "- send more mid-market distributors",
+    "",
+    "Useful feedback tags:",
+    "",
+    "- booked",
+    "- replied",
+    "- bad fit",
+    "- no contact path",
+    "- already customer",
+    "- exclude this vertical",
+    "- send more like this",
     "",
     "FreightTrigger provides sales intelligence only. We do not broker freight, arrange transportation, select carriers, handle loads, manage shipments, process contracts, store shipping documents, manage invoices, or move payments between shippers and carriers.",
     "",
     `Support: ${SUPPORT_EMAIL}`
   ].join("\n");
 
-  await sendGmailMessage(email, "FreightTrigger beta onboarding", body);
+  await sendGmailMessage(email, "FreightTrigger beta access confirmed", body);
   return { sent: true, to: email };
 }
