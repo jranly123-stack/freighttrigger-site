@@ -9,7 +9,7 @@
    Candidate buyer companies are scraped, scored, checked for fit, and enriched for public contact paths. Weak contact records are routed toward Clay enrichment.
 
 3. Controlled outreach
-   Qualified prospects receive a concise preview email during business hours only. The email links to the public sample feed and Stripe beta checkout.
+   Qualified prospects receive a concise preview email during business hours only after `OUTREACH_ENABLED=true` is set. Until the buyer-flow sample is approved, outreach remains queued but unsent.
 
 4. Reply classification
    Gmail replies are read and classified as interested, needs info, follow-up, not interested, unsubscribe, or bad fit. Opt-outs go to suppression.

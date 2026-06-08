@@ -168,6 +168,10 @@ def main() -> None:
     args = parser.parse_args()
 
     load_env()
+    if os.environ.get("OUTREACH_ENABLED") != "true":
+        print("outreach disabled; set OUTREACH_ENABLED=true only after buyer-flow approval")
+        return
+
     now = datetime.now(timezone.utc)
     if not args.force_window and not in_send_window(now):
         print("outside business-hour sending window; no email sent")

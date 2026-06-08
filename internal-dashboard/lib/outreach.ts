@@ -37,6 +37,13 @@ function badSource(prospect: Record<string, unknown>) {
 }
 
 export async function sendQueuedOutreach({ force = false } = {}) {
+  if (process.env.OUTREACH_ENABLED !== "true") {
+    return {
+      sent: 0,
+      skipped: "outreach disabled; set OUTREACH_ENABLED=true only after buyer-flow approval"
+    };
+  }
+
   const now = new Date();
   if (!force && !inBusinessWindow(now)) {
     return {

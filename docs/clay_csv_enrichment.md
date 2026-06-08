@@ -27,6 +27,20 @@ important.
 
 ## Local Import
 
+First export weak prospects from Airtable into a Clay-ready input file:
+
+```bash
+python3 scripts/export_prospects_for_clay.py
+```
+
+Upload this file into Clay:
+
+```bash
+exports/clay_input_prospects.csv
+```
+
+Use Clay to enrich company/contact fields, then export the enriched Clay table.
+
 Place the export here:
 
 ```bash
