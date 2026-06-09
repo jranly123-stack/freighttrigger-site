@@ -66,8 +66,10 @@ GitHub Actions:
 Scheduler. Calls protected Vercel cron endpoints at business-safe times.
 
 DigitalOcean VPS:
-Future worker layer. Runs durable scheduled jobs, retries, health checks, logs,
-Gmail polling, and report delivery after the Vercel/GitHub loop is proven.
+Worker layer. Runs the durable FreightTrigger scheduler, calls protected Vercel
+cron endpoints, keeps worker logs, prevents duplicate same-minute jobs, and
+becomes the foundation for retries, health checks, Gmail polling, and report
+delivery.
 
 ## Weekday Schedule
 
