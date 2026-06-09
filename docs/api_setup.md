@@ -23,6 +23,7 @@ Use `.env.example` as the template for local credentials.
 - `GOOGLE_CLIENT_SECRET` - Gmail API OAuth client secret.
 - `GOOGLE_REDIRECT_URI` - local OAuth callback URL. Default: `http://localhost:8765/oauth2callback`.
 - `GMAIL_REFRESH_TOKEN` - long-lived Gmail OAuth token created by the local setup helper.
+- `GMAILREFRESHTOKEN` - compact alias accepted by the engine and useful where underscore names are inconvenient.
 - `CLAYAPIKEY` - Clay workspace API key when API access is available.
 - `CLAYWEBHOOKURL` - optional Clay webhook/workflow URL for automated enrichment handoff.
 
@@ -31,6 +32,10 @@ The code also accepts underscore aliases locally:
 - `DATAFORSEO_LOGIN`
 - `DATAFORSEO_PASSWORD`
 - `AIRTABLEBASEID`
+- `GOOGLECLIENTID`
+- `GOOGLECLIENTSECRET`
+- `GOOGLEREDIRECTURI`
+- `GMAILREFRESHTOKEN`
 - `CLAY_API_KEY`
 - `CLAY_WEBHOOK_URL`
 
@@ -90,12 +95,13 @@ Gmail automation requires one account-owner browser approval. After that, the en
    `python3 scripts/gmail_oauth_setup.py`
 
 4. Approve the consent screen for `signals@getfreighttrigger.com`.
-5. The script writes `GMAIL_REFRESH_TOKEN` into `.env`.
-6. Verify with:
+5. The script writes `GMAIL_REFRESH_TOKEN` and `GMAILREFRESHTOKEN` into `.env`.
+6. Add the same refresh token to Vercel for `triggerops` as either `GMAIL_REFRESH_TOKEN` or `GMAILREFRESHTOKEN`.
+7. Verify with:
 
    `python3 scripts/gmail_smoke_test.py`
 
-Do not paste the refresh token into chat. It is equivalent to long-lived inbox access.
+If the smoke test reports that both refresh-token names are missing, the OAuth consent flow has not been completed yet. Do not paste the refresh token into chat. It is equivalent to long-lived inbox access.
 
 ## Current Boundary
 

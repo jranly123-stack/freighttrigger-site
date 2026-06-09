@@ -56,6 +56,14 @@ def write_env_value(key: str, value: str) -> None:
     ENV_PATH.write_text("\n".join(output) + "\n")
 
 
+def env_value(values: dict[str, str], *names: str) -> str:
+    for name in names:
+        value = values.get(name) or os.environ.get(name)
+        if value:
+            return value
+    return ""
+
+
 class CallbackHandler(BaseHTTPRequestHandler):
     server: "OAuthServer"
 
@@ -113,9 +121,9 @@ def exchange_code(code: str, redirect_uri: str, client_id: str, client_secret: s
 
 def main() -> None:
     env = load_env()
-    client_id = env.get("GOOGLE_CLIENT_ID")
-    client_secret = env.get("GOOGLE_CLIENT_SECRET")
-    redirect_uri = env.get("GOOGLE_REDIRECT_URI") or DEFAULT_REDIRECT
+    client_id = env_value(env, "GOOGLE_CLIENT_ID", "GOOGLECLIENTID")
+    client_secret = env_value(env, "GOOGLE_CLIENT_SECRET", "GOOGLECLIENTSECRET")
+    redirect_uri = env_value(env, "GOOGLE_REDIRECT_URI", "GOOGLEREDIRECTURI") or DEFAULT_REDIRECT
     if not client_id or not client_secret:
         raise SystemExit("GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set in .env.")
 
@@ -159,6 +167,7 @@ def main() -> None:
         )
     write_env_value("GOOGLE_REDIRECT_URI", redirect_uri)
     write_env_value("GMAIL_REFRESH_TOKEN", refresh_token)
+    write_env_value("GMAILREFRESHTOKEN", refresh_token)
     print("Gmail refresh token saved to .env as GMAIL_REFRESH_TOKEN.")
     print("No token was printed. Run python3 scripts/gmail_smoke_test.py to verify.")
 

@@ -14,6 +14,8 @@ const SAMPLE_URL = "https://getfreighttrigger.com/sample-feed.html";
 const CHECKOUT_URL = "https://buy.stripe.com/14A8wO6R4df565JbjYfAc00";
 const FROM_EMAIL = "signals@getfreighttrigger.com";
 const MAX_AUTO_REPLIES = 3;
+const MAX_WARM_FOLLOWUPS = 5;
+const CONVERSION_TAG = "[conversion-response:";
 
 type ReplyIntent = "Interested" | "Needs Info" | "Follow-up" | "Not Interested" | "Unsubscribe" | "Bad Fit";
 
@@ -82,23 +84,123 @@ async function classifyWithOpenAI(subject: string, body: string): Promise<ReplyI
   return "Needs Info";
 }
 
-function buildSampleReply() {
+function linkWithContext(url: string, intent: ReplyIntent, email: string) {
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}utm_source=gmail&utm_medium=reply&utm_campaign=${encodeURIComponent(
+    intent.toLowerCase().replace(/\s+/g, "-")
+  )}&contact=${encodeURIComponent(email)}`;
+}
+
+function inferQuestionAsked(subject: string, body: string) {
+  const text = `${subject}\n${body}`.replace(/\s+/g, " ").trim();
+  const question = text.match(/[^.!?]*\?/)?.[0]?.trim();
+  if (question) return question.slice(0, 260);
+
+  const lower = text.toLowerCase();
+  if (lower.includes("price") || lower.includes("cost") || lower.includes("how much")) {
+    return "Pricing / cost clarity";
+  }
+  if (lower.includes("include") || lower.includes("what do") || lower.includes("details")) {
+    return "Product inclusion clarity";
+  }
+  if (lower.includes("sample") || lower.includes("example") || lower.includes("preview")) {
+    return "Sample / proof request";
+  }
+  return "General information request";
+}
+
+function inferObjectionCategory(subject: string, body: string) {
+  const lower = `${subject}\n${body}`.toLowerCase();
+  if (/(price|cost|expensive|budget|too much)/.test(lower)) return "price";
+  if (/(trust|proof|real|source|accurate|verify|verified)/.test(lower)) return "trust/data";
+  if (/(fit|vertical|industry|territory|region|service)/.test(lower)) return "fit";
+  if (/(how|what|include|details|sample|example|preview)/.test(lower)) return "clarity";
+  return "unknown";
+}
+
+function buildNeedsInfoReply(context: { from: string }) {
+  const sampleUrl = linkWithContext(SAMPLE_URL, "Needs Info", context.from);
+  const checkoutUrl = linkWithContext(CHECKOUT_URL, "Needs Info", context.from);
+
   return [
-    "Here is the FreightTrigger preview:",
+    "Good question.",
     "",
-    SAMPLE_URL,
+    "FreightTrigger is a weekly shipper-timing feed for logistics sales teams. It is built to answer: who has a current business event worth contacting, why the timing matters, what freight angle fits, and what first touch should say.",
     "",
-    "The preview shows the format. The paid beta feed includes current records with source context, contact route, scoring notes, and sales positioning.",
+    "Preview:",
+    sampleUrl,
     "",
-    "If you want the current feed now, beta checkout is here. Monday updates continue after that:",
-    CHECKOUT_URL,
+    "The preview shows the structure. The paid beta feed includes current account records, source context, freight read, contact route, scoring notes, and sales positioning.",
+    "",
+    "Current beta:",
+    "$497/month. Checkout delivers the current feed immediately, then Monday updates continue each week:",
+    checkoutUrl,
+    "",
+    "If you want a direct answer before checkout, reply with the specific lane, region, or customer type your team sells into and I will tell you whether the beta feed fits.",
     "",
     "FreightTrigger provides sales intelligence only. We do not broker freight, arrange transportation, select carriers, handle loads, manage shipments, process contracts, store shipping documents, manage invoices, or move payments between shippers and carriers."
   ].join("\n");
 }
 
+function buildInterestedReply(context: { from: string }) {
+  const sampleUrl = linkWithContext(SAMPLE_URL, "Interested", context.from);
+  const checkoutUrl = linkWithContext(CHECKOUT_URL, "Interested", context.from);
+
+  return [
+    "Here is the clean path.",
+    "",
+    "Preview:",
+    sampleUrl,
+    "",
+    "Beta feed:",
+    checkoutUrl,
+    "",
+    "After checkout, the current FreightTrigger feed is delivered right away. Monday updates continue each week after that.",
+    "",
+    "The feed includes current shipper opportunities with evidence, freight read, buyer/contact route, urgency/confidence notes, and outreach positioning.",
+    "",
+    "If you want to sanity-check fit first, reply with your target region and whether you sell reefer, FTL/LTL, brokerage, 3PL, warehousing, or final mile."
+  ].join("\n");
+}
+
+function buildWarmReply(intent: ReplyIntent, context: { from: string; subject: string; body: string }) {
+  if (intent === "Interested") return buildInterestedReply({ from: context.from });
+  return buildNeedsInfoReply({ from: context.from });
+}
+
+function conversionTrackingBlock(input: {
+  gmailId: string;
+  from: string;
+  intent: ReplyIntent;
+  subject: string;
+  body: string;
+  answerSent: string;
+}) {
+  const question = inferQuestionAsked(input.subject, input.body);
+  const objectionCategory = inferObjectionCategory(input.subject, input.body);
+  const now = new Date().toISOString();
+  return [
+    `${CONVERSION_TAG}${input.intent.toLowerCase().replace(/\s+/g, "-")}:${input.gmailId}]`,
+    `tracked_at: ${now}`,
+    `contact: ${input.from}`,
+    `question_asked: ${question}`,
+    `answer_sent: ${input.answerSent}`,
+    `sample_url: ${linkWithContext(SAMPLE_URL, input.intent, input.from)}`,
+    `stripe_url: ${linkWithContext(CHECKOUT_URL, input.intent, input.from)}`,
+    "sample_click: pending_tracking",
+    "stripe_click: pending_tracking",
+    "purchase_status: pending_stripe_match",
+    `objection_category: ${objectionCategory}`
+  ].join("\n");
+}
+
 function linkedProspect(prospects: AirtableRecord[], email: string) {
   return prospects.find((record) => normalizeEmail(record.fields["Contact Email"]) === email);
+}
+
+function emailFromReplySummary(summary: string) {
+  const match = summary.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  return normalizeEmail(match?.[0]);
 }
 
 function hasProcessedMessage(existingReplies: AirtableRecord[], gmailId: string) {
@@ -132,6 +234,80 @@ async function updateProspectFromIntent(prospect: AirtableRecord | undefined, in
   ]);
 }
 
+function replyProspectId(record: AirtableRecord) {
+  return (record.fields.Prospect as string[] | undefined)?.[0] || "";
+}
+
+function prospectEmailById(prospects: AirtableRecord[]) {
+  return new Map(
+    prospects
+      .map((record) => [record.id, normalizeEmail(record.fields["Contact Email"])] as const)
+      .filter(([, email]) => Boolean(email))
+  );
+}
+
+function replyDestination(reply: AirtableRecord, prospects: AirtableRecord[]) {
+  const prospectId = replyProspectId(reply);
+  const byId = prospectEmailById(prospects);
+  return (prospectId ? byId.get(prospectId) : "") || emailFromReplySummary(String(reply.fields["Reply Summary"] || ""));
+}
+
+async function processWarmReplyFollowups(
+  prospects: AirtableRecord[],
+  existingReplies: AirtableRecord[],
+  suppressed: Set<string>,
+  { force = false } = {}
+) {
+  let sent = 0;
+  const patches: Array<{ id: string; fields: Record<string, unknown> }> = [];
+
+  for (const reply of existingReplies) {
+    const intent = String(reply.fields.Intent || "") as ReplyIntent;
+    if (intent !== "Interested" && intent !== "Needs Info") continue;
+
+    const existingSummary = String(reply.fields["Reply Summary"] || "");
+    if (existingSummary.includes(CONVERSION_TAG)) continue;
+
+    const to = replyDestination(reply, prospects);
+    if (!to || suppressed.has(to)) continue;
+    if (!force && !inBusinessWindow()) continue;
+    if (sent >= MAX_WARM_FOLLOWUPS) break;
+
+    const subject = "Re: FreightTrigger sample signal feed";
+    const body = buildWarmReply(intent, {
+      from: to,
+      subject: String(reply.fields["Reply Summary"] || ""),
+      body: String(reply.fields["Reply Summary"] || "")
+    });
+
+    await sendGmailMessage(to, subject, body);
+    sent += 1;
+
+    patches.push({
+      id: reply.id,
+      fields: {
+        "Reply Summary": [
+          existingSummary,
+          conversionTrackingBlock({
+            gmailId: reply.id,
+            from: to,
+            intent,
+            subject: String(reply.fields["Reply Summary"] || ""),
+            body: String(reply.fields["Reply Summary"] || ""),
+            answerSent: intent === "Interested" ? "interested-direct-path-v1" : "needs-info-clarity-v1"
+          })
+        ]
+          .filter(Boolean)
+          .join("\n"),
+        "Next Action": "Warm reply answered; monitor sample/checkout behavior and next objection."
+      }
+    });
+  }
+
+  await patchRecords("Replies", patches);
+  return sent;
+}
+
 export async function classifyRecentReplies({ force = false } = {}) {
   const [prospects, existingReplies, suppression] = await Promise.all([
     listRecords("Broker Prospects", 100),
@@ -159,14 +335,31 @@ export async function classifyRecentReplies({ force = false } = {}) {
     const summary = `[gmail:${message.id}] ${from} replied with ${intent}. Subject: ${subject || "No subject"}. Snippet: ${
       message.snippet || body.slice(0, 180)
     }`;
+    const warmIntent = intent === "Interested" || intent === "Needs Info";
+    const canAutoReply = warmIntent && autoSent < MAX_AUTO_REPLIES && (force || inBusinessWindow());
+    const answerSent = intent === "Interested" ? "interested-direct-path-v1" : "needs-info-clarity-v1";
 
     createdReplies.push({
-      "Reply Summary": summary,
+      "Reply Summary": canAutoReply
+        ? [
+            summary,
+            conversionTrackingBlock({
+              gmailId: message.id,
+              from,
+              intent,
+              subject,
+              body,
+              answerSent
+            })
+          ].join("\n")
+        : summary,
       "Prospect": prospect ? [prospect.id] : undefined,
       "Intent": intent,
       "Next Action":
-        intent === "Interested" || intent === "Needs Info"
-          ? "Send preview and beta checkout path."
+        canAutoReply
+          ? "Warm reply answered; monitor sample/checkout behavior and next objection."
+          : warmIntent
+            ? "Send preview and beta checkout path."
           : intent === "Unsubscribe"
             ? "Suppress immediately."
             : intent === "Follow-up"
@@ -185,11 +378,13 @@ export async function classifyRecentReplies({ force = false } = {}) {
     await updateProspectFromIntent(prospect, intent, summary);
 
     if (
-      (intent === "Interested" || intent === "Needs Info") &&
-      autoSent < MAX_AUTO_REPLIES &&
-      (force || inBusinessWindow())
+      canAutoReply
     ) {
-      await sendGmailMessage(from, "FreightTrigger sample signal feed", buildSampleReply());
+      await sendGmailMessage(
+        from,
+        "FreightTrigger sample signal feed",
+        buildWarmReply(intent, { from, subject, body })
+      );
       autoSent += 1;
     }
   }
@@ -199,10 +394,13 @@ export async function classifyRecentReplies({ force = false } = {}) {
     createRecords("Suppression List", suppressedRecords)
   ]);
 
+  const warmFollowupsSent = await processWarmReplyFollowups(prospects, existingReplies, suppressed, { force });
+
   return {
     scanned: messages.length,
     classified: replyCreates.length,
     suppressed: suppressCreates.length,
-    sampleRepliesSent: autoSent
+    sampleRepliesSent: autoSent,
+    warmFollowupsSent
   };
 }

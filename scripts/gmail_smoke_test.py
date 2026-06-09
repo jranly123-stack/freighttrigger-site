@@ -14,6 +14,8 @@ ENV_PATH = ROOT / ".env"
 
 
 def load_env() -> None:
+    if not ENV_PATH.exists():
+        raise SystemExit(".env not found. Create it from .env.example first.")
     for raw in ENV_PATH.read_text().splitlines():
         line = raw.strip()
         if not line or line.startswith("#") or "=" not in line:
@@ -22,12 +24,20 @@ def load_env() -> None:
         os.environ.setdefault(key, value)
 
 
+def env_value(*names: str) -> str:
+    for name in names:
+        value = os.environ.get(name)
+        if value:
+            return value
+    raise SystemExit(f"Missing required environment variable: {' or '.join(names)}")
+
+
 def refresh_access_token() -> str:
     payload = urllib.parse.urlencode(
         {
-            "client_id": os.environ["GOOGLE_CLIENT_ID"],
-            "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
-            "refresh_token": os.environ["GMAIL_REFRESH_TOKEN"],
+            "client_id": env_value("GOOGLE_CLIENT_ID", "GOOGLECLIENTID"),
+            "client_secret": env_value("GOOGLE_CLIENT_SECRET", "GOOGLECLIENTSECRET"),
+            "refresh_token": env_value("GMAIL_REFRESH_TOKEN", "GMAILREFRESHTOKEN"),
             "grant_type": "refresh_token",
         }
     ).encode()

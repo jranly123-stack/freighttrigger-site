@@ -1,4 +1,4 @@
-import { requireEnv } from "./local-env";
+import { optionalEnv, requireEnv } from "./local-env";
 
 const FROM_EMAIL = "signals@getfreighttrigger.com";
 
@@ -21,9 +21,9 @@ function base64Url(input: string) {
 
 export async function refreshGmailAccessToken() {
   const params = new URLSearchParams({
-    client_id: requireEnv("GOOGLE_CLIENT_ID"),
-    client_secret: requireEnv("GOOGLE_CLIENT_SECRET"),
-    refresh_token: requireEnv("GMAIL_REFRESH_TOKEN"),
+    client_id: optionalEnv("GOOGLE_CLIENT_ID", "GOOGLECLIENTID") || requireEnv("GOOGLE_CLIENT_ID"),
+    client_secret: optionalEnv("GOOGLE_CLIENT_SECRET", "GOOGLECLIENTSECRET") || requireEnv("GOOGLE_CLIENT_SECRET"),
+    refresh_token: optionalEnv("GMAIL_REFRESH_TOKEN", "GMAILREFRESHTOKEN") || requireEnv("GMAIL_REFRESH_TOKEN"),
     grant_type: "refresh_token"
   });
 
