@@ -10,17 +10,49 @@ import {
 import { optionalEnv } from "./local-env";
 import { inBusinessWindow } from "./time";
 
-const SAMPLE_URL = "https://getfreighttrigger.com/sample-feed.html";
+const SAMPLE_URL = "https://getfreighttrigger.com/sample-feed";
 const CHECKOUT_URL = "https://buy.stripe.com/14A8wO6R4df565JbjYfAc00";
 const FROM_EMAIL = "signals@getfreighttrigger.com";
 const MAX_AUTO_REPLIES = 3;
 const MAX_WARM_FOLLOWUPS = 5;
 const CONVERSION_TAG = "[conversion-response:";
+const VENDOR_NOISE_DOMAINS = [
+  "airtable.com",
+  "clay.com",
+  "dataforseo.com",
+  "digitalocean.com",
+  "firecrawl.dev",
+  "github.com",
+  "google.com",
+  "googleworkspace.com",
+  "login.gov",
+  "namecheap.com",
+  "openai.com",
+  "sam.gov",
+  "serpapi.com",
+  "stripe.com",
+  "vercel.com"
+];
 
 type ReplyIntent = "Interested" | "Needs Info" | "Follow-up" | "Not Interested" | "Unsubscribe" | "Bad Fit";
 
 function normalizeEmail(value: unknown) {
   return String(value || "").trim().toLowerCase();
+}
+
+function emailDomain(email: string) {
+  return email.includes("@") ? email.split("@").pop()?.toLowerCase() || "" : "";
+}
+
+function isVendorNoise(from: string, subject = "", body = "") {
+  const domain = emailDomain(from);
+  const text = `${from}\n${subject}\n${body}`.toLowerCase();
+  return (
+    VENDOR_NOISE_DOMAINS.some((noiseDomain) => domain === noiseDomain || domain.endsWith(`.${noiseDomain}`)) ||
+    /(^no-?reply|donotreply|verify your account|billing|invoice|security alert|new sign-in|workspace|api key|onboarding|trial|receipt|password reset|one-time password|confirm your email)/.test(
+      text
+    )
+  );
 }
 
 function classifyByRules(text: string): ReplyIntent | undefined {
@@ -31,11 +63,11 @@ function classifyByRules(text: string): ReplyIntent | undefined {
   if (/(not interested|no thanks|no thank you|not a fit|wrong person)/.test(lower)) {
     return lower.includes("wrong person") ? "Bad Fit" : "Not Interested";
   }
+  if (/(how much|price|pricing|what.*include|details|territory|coverage|more info|more information)/.test(lower)) {
+    return "Needs Info";
+  }
   if (/(send|share|show|see|sample|example|report|feed|interested|tell me more|more info)/.test(lower)) {
     return lower.includes("later") ? "Follow-up" : "Interested";
-  }
-  if (/(how much|price|pricing|what.*include|details|territory|coverage)/.test(lower)) {
-    return "Needs Info";
   }
   if (/(later|next week|next month|circle back|follow up)/.test(lower)) {
     return "Follow-up";
@@ -320,6 +352,8 @@ export async function classifyRecentReplies({ force = false } = {}) {
   const createdReplies: Record<string, unknown>[] = [];
   const suppressedRecords: Record<string, unknown>[] = [];
   let autoSent = 0;
+  let skippedNoise = 0;
+  let skippedUnlinked = 0;
 
   for (const ref of messages) {
     if (hasProcessedMessage(existingReplies, ref.id)) continue;
@@ -330,8 +364,16 @@ export async function classifyRecentReplies({ force = false } = {}) {
 
     const subject = headerValue(message, "Subject");
     const body = messageBody(message).slice(0, 4000);
-    const intent = await classifyWithOpenAI(subject, body);
+    if (isVendorNoise(from, subject, body)) {
+      skippedNoise += 1;
+      continue;
+    }
     const prospect = linkedProspect(prospects, from);
+    if (!prospect) {
+      skippedUnlinked += 1;
+      continue;
+    }
+    const intent = await classifyWithOpenAI(subject, body);
     const summary = `[gmail:${message.id}] ${from} replied with ${intent}. Subject: ${subject || "No subject"}. Snippet: ${
       message.snippet || body.slice(0, 180)
     }`;
@@ -400,6 +442,8 @@ export async function classifyRecentReplies({ force = false } = {}) {
     scanned: messages.length,
     classified: replyCreates.length,
     suppressed: suppressCreates.length,
+    skippedNoise,
+    skippedUnlinked,
     sampleRepliesSent: autoSent,
     warmFollowupsSent
   };

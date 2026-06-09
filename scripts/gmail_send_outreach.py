@@ -48,6 +48,19 @@ def env_value(*keys: str) -> str:
     return ""
 
 
+def env_bool(*keys: str) -> bool:
+    return env_value(*keys).strip().lower() == "true"
+
+
+def max_sends_per_run() -> int:
+    raw = env_value("OUTREACH_MAX_SENDS_PER_RUN", "OUTREACHMAXSENDSPERRUN")
+    try:
+        value = int(raw)
+    except ValueError:
+        value = MAX_SENDS_PER_RUN
+    return max(1, min(10, value))
+
+
 def http_json(method: str, url: str, headers: dict | None = None, body: dict | None = None) -> dict:
     data = None
     request_headers = headers or {}
@@ -192,9 +205,9 @@ def main() -> None:
     args = parser.parse_args()
 
     load_env()
-    outreach_enabled = os.environ.get("OUTREACH_ENABLED") == "true"
+    outreach_enabled = env_bool("OUTREACH_ENABLED", "OUTREACHENABLED")
     if not outreach_enabled and not args.dry_run:
-        print("outreach disabled; set OUTREACH_ENABLED=true only after buyer-flow approval")
+        print("outreach disabled; set OUTREACHENABLED=true only after buyer-flow approval")
         return
 
     now = datetime.now(timezone.utc)
@@ -248,7 +261,7 @@ def main() -> None:
             }
         )
         sent += 1
-        max_records = args.limit if args.dry_run else MAX_SENDS_PER_RUN
+        max_records = args.limit if args.dry_run else max_sends_per_run()
         if sent >= max_records:
             break
     if updates and not args.dry_run:

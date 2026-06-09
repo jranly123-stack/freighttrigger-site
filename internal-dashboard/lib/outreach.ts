@@ -1,8 +1,19 @@
 import { listRecords, patchRecords } from "./airtable";
 import { sendGmailMessage } from "./gmail";
+import { optionalEnv } from "./local-env";
 import { inBusinessWindow } from "./time";
 
-const MAX_SENDS_PER_RUN = 3;
+function outreachEnabled() {
+  return optionalEnv("OUTREACH_ENABLED", "OUTREACHENABLED").toLowerCase() === "true";
+}
+
+function maxSendsPerRun() {
+  const raw = optionalEnv("OUTREACH_MAX_SENDS_PER_RUN", "OUTREACHMAXSENDSPERRUN");
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 3;
+  return Math.max(1, Math.min(10, Math.floor(parsed)));
+}
+
 const BAD_SOURCE_DOMAINS = [
   "foodlogistics.com",
   "usda.gov",
@@ -37,10 +48,10 @@ function badSource(prospect: Record<string, unknown>) {
 }
 
 export async function sendQueuedOutreach({ force = false } = {}) {
-  if (process.env.OUTREACH_ENABLED !== "true") {
+  if (!outreachEnabled()) {
     return {
       sent: 0,
-      skipped: "outreach disabled; set OUTREACH_ENABLED=true only after buyer-flow approval"
+      skipped: "outreach disabled; set OUTREACHENABLED=true only after buyer-flow approval"
     };
   }
 
@@ -66,6 +77,7 @@ export async function sendQueuedOutreach({ force = false } = {}) {
 
   const updates: Array<{ id: string; fields: Record<string, unknown> }> = [];
   const sentTo: string[] = [];
+  const maxSends = maxSendsPerRun();
 
   for (const record of queued) {
     const prospectId = (record.fields.Prospect as string[] | undefined)?.[0];
@@ -91,13 +103,14 @@ export async function sendQueuedOutreach({ force = false } = {}) {
       }
     });
 
-    if (sentTo.length >= MAX_SENDS_PER_RUN) break;
+    if (sentTo.length >= maxSends) break;
   }
 
   await patchRecords("Outreach", updates);
 
   return {
     sent: sentTo.length,
+    maxSends,
     sentTo
   };
 }
