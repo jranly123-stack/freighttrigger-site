@@ -21,6 +21,7 @@ ENV_PATH = ROOT / ".env"
 FROM_EMAIL = "signals@getfreighttrigger.com"
 SEND_TZ = ZoneInfo("America/New_York")
 MAX_SENDS_PER_RUN = 5
+DEFAULT_DRY_RUN_LIMIT = 25
 BAD_SOURCE_DOMAINS = (
     "foodlogistics.com",
     "usda.gov",
@@ -39,6 +40,14 @@ def load_env() -> None:
             os.environ.setdefault(key, value)
 
 
+def env_value(*keys: str) -> str:
+    for key in keys:
+        value = os.environ.get(key)
+        if value:
+            return value
+    return ""
+
+
 def http_json(method: str, url: str, headers: dict | None = None, body: dict | None = None) -> dict:
     data = None
     request_headers = headers or {}
@@ -54,9 +63,9 @@ def http_json(method: str, url: str, headers: dict | None = None, body: dict | N
 def refresh_access_token() -> str:
     payload = urllib.parse.urlencode(
         {
-            "client_id": os.environ["GOOGLE_CLIENT_ID"],
-            "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
-            "refresh_token": os.environ["GMAIL_REFRESH_TOKEN"],
+            "client_id": env_value("GOOGLE_CLIENT_ID", "GOOGLECLIENTID"),
+            "client_secret": env_value("GOOGLE_CLIENT_SECRET", "GOOGLECLIENTSECRET"),
+            "refresh_token": env_value("GMAIL_REFRESH_TOKEN", "GMAILREFRESHTOKEN"),
             "grant_type": "refresh_token",
         }
     ).encode()
@@ -145,6 +154,20 @@ def bad_source(fields: dict) -> bool:
     return any(domain in haystack for domain in BAD_SOURCE_DOMAINS) or "ceo gate: rejected" in haystack
 
 
+def contact_gate_reason(prospect_fields: dict, email: str, suppression: set[str]) -> str:
+    if not email:
+        return "missing contact email"
+    if email in suppression:
+        return "suppressed contact"
+    if prospect_fields.get("Status") != "Qualified":
+        return f"prospect status is {prospect_fields.get('Status') or 'blank'}"
+    if bad_source(prospect_fields):
+        return "bad or rejected source"
+    if not domains_match(email, str(prospect_fields.get("Website", ""))):
+        return "email domain does not match prospect website"
+    return ""
+
+
 def gmail_send(token: str, to_email: str, subject: str, body: str) -> dict:
     message = EmailMessage()
     message["To"] = to_email
@@ -165,10 +188,12 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--force-window", action="store_true")
+    parser.add_argument("--limit", type=int, default=DEFAULT_DRY_RUN_LIMIT)
     args = parser.parse_args()
 
     load_env()
-    if os.environ.get("OUTREACH_ENABLED") != "true":
+    outreach_enabled = os.environ.get("OUTREACH_ENABLED") == "true"
+    if not outreach_enabled and not args.dry_run:
         print("outreach disabled; set OUTREACH_ENABLED=true only after buyer-flow approval")
         return
 
@@ -191,26 +216,25 @@ def main() -> None:
     token = "" if args.dry_run else refresh_access_token()
     updates = []
     sent = 0
+    skipped: dict[str, int] = {}
     for outreach in queued:
         fields = outreach["fields"]
         prospect_id = (fields.get("Prospect") or [None])[0]
         prospect = prospects.get(prospect_id or "")
         if not prospect:
+            skipped["missing linked prospect"] = skipped.get("missing linked prospect", 0) + 1
             continue
         prospect_fields = prospect["fields"]
         to_email = str(prospect_fields.get("Contact Email", "")).strip().lower()
-        if not to_email or to_email in suppression:
-            continue
-        if prospect_fields.get("Status") != "Qualified":
-            continue
-        if bad_source(prospect_fields):
-            continue
-        if not domains_match(to_email, str(prospect_fields.get("Website", ""))):
+        gate_reason = contact_gate_reason(prospect_fields, to_email, suppression)
+        if gate_reason:
+            skipped[gate_reason] = skipped.get(gate_reason, 0) + 1
             continue
         subject = str(fields.get("Email Subject") or "Food/bev shipper timing signals")
         body = str(fields.get("Message") or "")
         if args.dry_run:
-            print(f"dry-run send: {to_email} | {subject}")
+            company = str(prospect_fields.get("Company Name") or "Unknown company")
+            print(f"dry-run eligible: {company} | {to_email} | {subject}")
         else:
             gmail_send(token, to_email, subject, body)
             print(f"sent: {to_email} | {subject}")
@@ -224,13 +248,19 @@ def main() -> None:
             }
         )
         sent += 1
-        if sent >= MAX_SENDS_PER_RUN:
+        max_records = args.limit if args.dry_run else MAX_SENDS_PER_RUN
+        if sent >= max_records:
             break
     if updates and not args.dry_run:
         patch_records("Outreach", updates)
     elif updates:
         print("dry run only; Airtable not updated")
+    print(f"outreach_enabled={str(outreach_enabled).lower()}")
     print(f"processed {sent} queued outreach records")
+    if skipped:
+        print("skip_reasons:")
+        for reason, count in sorted(skipped.items()):
+            print(f"- {reason}: {count}")
 
 
 if __name__ == "__main__":

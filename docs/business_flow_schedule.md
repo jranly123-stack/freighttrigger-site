@@ -11,8 +11,15 @@
 3. Controlled outreach
    Qualified prospects receive a concise preview email during business hours only after `OUTREACH_ENABLED=true` is set. Until the buyer-flow sample is approved, outreach remains queued but unsent.
 
+   If `OUTREACH_ENABLED=false`, scheduled outreach jobs still run but return a
+   skipped result. This proves the scheduler works without sending cold email.
+
 4. Reply classification
    Gmail replies are read and classified as interested, needs info, follow-up, not interested, unsubscribe, or bad fit. Opt-outs go to suppression.
+
+   Warm reply handling is separate from cold outbound. Existing `Interested` and
+   `Needs Info` replies may be answered during business hours after Gmail runtime
+   access is verified, even while cold outbound remains paused.
 
 5. Checkout
    Stripe checkout sells the Beta FreightTrigger Signal Feed at $497/month.
@@ -57,6 +64,10 @@ Internal operator app and protected API endpoints.
 
 GitHub Actions:
 Scheduler. Calls protected Vercel cron endpoints at business-safe times.
+
+DigitalOcean VPS:
+Future worker layer. Runs durable scheduled jobs, retries, health checks, logs,
+Gmail polling, and report delivery after the Vercel/GitHub loop is proven.
 
 ## Weekday Schedule
 
@@ -126,6 +137,10 @@ The system is currently food/bev + reefer focused. Expansion waits for conversio
 
 Overall current autonomy: approximately 65%.
 
+Cold outbound remains intentionally gated. Scheduler automation can run, but live
+new-prospect sends require `OUTREACH_ENABLED=true` after buyer-flow and dry-run
+approval.
+
 ## Monday Plan
 
 1. Let scheduled signal scan run at 9:00 AM.
@@ -144,6 +159,10 @@ Tighten food/bev + reefer feed quality, prove replies and first paid beta subscr
 
 Stage 2: $5k-$15k MRR
 Add Clay webhook enrichment, stronger source scoring, bounce tracking, and basic client preference fields.
+
+Add a small VPS worker layer when Gmail runtime, reply handling, and dry-run
+outreach quality are proven. The VPS should run the engine, not replace the
+website or dashboard.
 
 Stage 3: $15k-$50k MRR
 Create territory feeds, vertical feeds, stronger contact enrichment, subscription-tier delivery, and conversion benchmark fields.

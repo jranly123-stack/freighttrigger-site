@@ -14,7 +14,7 @@ from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 ENV_PATH = ROOT / ".env"
-SAMPLE_URL = "https://getfreighttrigger.com/sample-feed.html"
+SAMPLE_URL = "https://getfreighttrigger.com/sample-feed"
 STRIPE_URL = "https://buy.stripe.com/14A8wO6R4df565JbjYfAc00"
 PUBLIC_SITE_URL = "https://getfreighttrigger.com"
 BAD_SOURCE_DOMAINS = (
@@ -149,6 +149,20 @@ def same_domain(email: str, website: str) -> bool:
     return mail_host == site_host or mail_host.endswith("." + site_host) or site_host.endswith("." + mail_host)
 
 
+def contact_gate_summary(fields: dict) -> str:
+    email = str(fields.get("Contact Email") or "").strip().lower()
+    website = str(fields.get("Website") or "")
+    if not email:
+        return "contact_gate=blocked_missing_email"
+    if not same_domain(email, website):
+        return "contact_gate=blocked_domain_mismatch"
+    if bad_source(fields):
+        return "contact_gate=blocked_source_quality"
+    if fields.get("Status") != "Qualified":
+        return f"contact_gate=blocked_status_{fields.get('Status') or 'blank'}"
+    return "contact_gate=passed_domain_matched"
+
+
 def bad_source(fields: dict) -> bool:
     website = str(fields.get("Website", "")).lower()
     notes = str(fields.get("Research Notes", "")).lower()
@@ -195,7 +209,11 @@ def main() -> None:
                 "Prospect": [prospect["id"]],
                 "Message": message,
                 "Status": "Queued",
-                "AI Personalization Tips": f"Buyer appears relevant for {target}. Keep first touch concise and direct to sample feed.",
+                "AI Personalization Tips": (
+                    f"Buyer appears relevant for {target}. "
+                    f"{contact_gate_summary(fields)}. "
+                    "Keep first touch concise and direct to sample feed."
+                ),
             }
         )
     created = create_records("Outreach", drafts)
@@ -215,7 +233,10 @@ def main() -> None:
                 "fields": {
                     "Email Subject": "Food/bev shipper timing signals",
                     "Message": build_message(str(company)),
-                    "AI Personalization Tips": "Use the partial preview as the hook. Do not expose the full source trail before checkout.",
+                    "AI Personalization Tips": (
+                        f"{contact_gate_summary(prospect.get('fields', {}))}. "
+                        "Use the partial preview as the hook. Do not expose the full source trail before checkout."
+                    ),
                 },
             }
         )
