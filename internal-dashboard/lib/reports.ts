@@ -43,14 +43,17 @@ export async function buildWeeklyReportBody() {
     "4. Lead with the trigger and the operating window.",
     "5. Reply with booked, replied, bad fit, no contact path, already customer, exclude this vertical, or send more like this.",
     "",
-    "Executive scan:",
-    "| Rank | Company | Region | Signal | Best-fit provider | Priority |",
-    "| --- | --- | --- | --- | --- | --- |"
+    "Executive scan:"
   ];
 
   rows.slice(0, 5).forEach((row, index) => {
     lines.push(
-      `| ${index + 1} | ${row.company} | ${row.location || "Review required"} | ${row.trigger || "Review required"} | ${row.likelyNeed || row.relevance || "Review required"} | ${row.urgency} urgency / ${row.confidence} confidence |`
+      "",
+      `${index + 1}. ${row.company}`,
+      `   Region: ${row.location || "Review required"}`,
+      `   Signal: ${row.trigger || "Review required"}`,
+      `   Best-fit provider: ${row.likelyNeed || row.relevance || "Review required"}`,
+      `   Priority: ${row.urgency}/100 urgency, ${row.confidence}/100 confidence`
     );
   });
 
