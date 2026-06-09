@@ -31,6 +31,33 @@ body {
   line-height: 1.5;
 }
 
+.redirect-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background: var(--surface);
+}
+
+.redirect-panel {
+  width: min(560px, 100%);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 32px;
+  box-shadow: var(--shadow);
+}
+
+.redirect-panel h1 {
+  margin: 16px 0 12px;
+  font-size: clamp(2rem, 4vw, 3.25rem);
+}
+
+.redirect-panel p:not(.eyebrow) {
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+
 a {
   color: inherit;
 }
