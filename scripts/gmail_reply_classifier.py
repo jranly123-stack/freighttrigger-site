@@ -17,7 +17,7 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parents[1]
 ENV_PATH = ROOT / ".env"
 FROM_EMAIL = "signals@getfreighttrigger.com"
-SAMPLE_URL = "https://getfreighttrigger.com/sample-feed.html"
+SAMPLE_URL = "https://getfreighttrigger.com/sample-feed"
 CHECKOUT_URL = "https://buy.stripe.com/14A8wO6R4df565JbjYfAc00"
 SEND_TZ = ZoneInfo("America/New_York")
 MAX_AUTO_REPLIES = 3

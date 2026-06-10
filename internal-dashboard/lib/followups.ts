@@ -2,7 +2,7 @@ import { createRecords, listRecords, type AirtableRecord } from "./airtable";
 import { daysBetween } from "./time";
 
 const MAX_FOLLOWUPS_PER_RUN = 6;
-const SAMPLE_URL = "https://getfreighttrigger.com/sample-feed.html";
+const SAMPLE_URL = "https://getfreighttrigger.com/sample-feed";
 const STRIPE_URL = "https://buy.stripe.com/14A8wO6R4df565JbjYfAc00";
 
 function linkedProspectId(record: AirtableRecord) {
@@ -30,11 +30,11 @@ function followUpStage(record: AirtableRecord) {
 function buildFollowUp(stage: number) {
   if (stage === 1) {
     return {
-      subject: "[FT-FU1] Quick follow-up: food/bev shipper timing signals",
+      subject: "[FT-FU1] Quick follow-up: food/bev freight demand signals",
       body: [
         "Quick follow-up on FreightTrigger.",
         "",
-        "The short version: we send logistics sales teams a weekly food/bev signal feed built around timing, not generic shipper names.",
+        "The short version: we send logistics sales teams early-warning food/bev demand signals built around event timing, not generic shipper names.",
         "",
         "Partial preview:",
         SAMPLE_URL,
@@ -53,7 +53,7 @@ function buildFollowUp(stage: number) {
       body: [
         "Checking once more.",
         "",
-        "Most broker prospecting starts too cold. FreightTrigger is meant to show which food/bev accounts have a timely business event worth using in the first touch.",
+        "Most broker prospecting starts too late or too cold. FreightTrigger is meant to show which food/bev accounts have a business event that may create freight demand before the account becomes obvious.",
         "",
         "Partial preview:",
         SAMPLE_URL,
@@ -71,7 +71,7 @@ function buildFollowUp(stage: number) {
     body: [
       "Closing the loop.",
       "",
-      "FreightTrigger is still opening beta spots for logistics sales teams that want food/bev shipper timing intelligence instead of another static list.",
+      "FreightTrigger is still opening beta spots for logistics sales teams that want early-warning food/bev freight demand intelligence instead of another static list.",
       "",
       "Preview:",
       SAMPLE_URL,

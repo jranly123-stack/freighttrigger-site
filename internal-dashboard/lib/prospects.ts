@@ -3,7 +3,7 @@ import { clayStatus, sendClayEnrichmentRequest } from "./clay";
 import { requireEnv } from "./local-env";
 import { searchWeb } from "./search";
 
-const SAMPLE_URL = "https://getfreighttrigger.com/sample-feed.html";
+const SAMPLE_URL = "https://getfreighttrigger.com/sample-feed";
 const STRIPE_URL = "https://buy.stripe.com/14A8wO6R4df565JbjYfAc00";
 
 const QUERIES = [
@@ -236,9 +236,9 @@ function defaultEmailBody(company: string) {
     "",
     "I found your team while mapping logistics providers that sell into food/bev, refrigerated, and time-sensitive freight.",
     "",
-    "FreightTrigger is a weekly shipper timing feed for sales teams that need a stronger reason to reach out than a static shipper list.",
+    "FreightTrigger is an early-warning freight demand feed. It looks for company events that may create future logistics pressure before they become obvious to everyone calling the same shipper list.",
     "",
-    "Each record starts with public business movement, then turns it into a freight read, contact route, and first-touch angle.",
+    "Each record starts with a company event, then turns it into freight interpretation, buyer/contact path, and a first-touch angle.",
     "",
     "Preview:",
     SAMPLE_URL,
@@ -385,7 +385,7 @@ export async function acquireBuyerProspects(options: AcquisitionOptions = {}) {
           "Research Notes": [
             `Fit score: ${fitScore}`,
             `Reason: ${analysis.reason || "Qualified by scheduled acquisition."}`,
-            `Personalization: ${analysis.personalization || "Lead with food/bev shipper timing intelligence."}`,
+            `Personalization: ${analysis.personalization || "Lead with the company event and freight demand interpretation."}`,
             `Source: ${url}`,
             `Public emails: ${emails.length ? emails.join(", ") : "not publicly verified"}`,
             `Public phones: ${phones.length ? phones.join(", ") : "not publicly verified"}`,
@@ -393,7 +393,7 @@ export async function acquireBuyerProspects(options: AcquisitionOptions = {}) {
           ].join("\n")
         });
         outreach.push({
-          "Email Subject": analysis.email_subject || "Food/bev shipper timing signals",
+          "Email Subject": analysis.email_subject || "Food/bev freight demand signals",
           Message: defaultEmailBody(company),
           Status: contactEmail ? "Queued" : "Needs Contact"
         });

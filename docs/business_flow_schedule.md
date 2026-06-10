@@ -33,6 +33,19 @@
 8. Feedback learning
    Replies, objections, bounces, purchases, renewals, and client feedback are stored so future targeting, scoring, and outreach improve.
 
+## Positioning Logic
+
+FreightTrigger is not a lead list. A lead list tells a rep who might ship.
+FreightTrigger tells a rep where timing may have changed.
+
+The operating model is:
+
+`company event -> possible freight demand -> evidence review -> freight interpretation -> buyer path -> outreach angle -> conversion learning`
+
+The strategic asset is not the page or dashboard. It is the growing record of
+which events, source types, verticals, buyer roles, and outreach angles produce
+replies, checkouts, renewals, and client feedback.
+
 ## Tool Correlation
 
 DataForSEO:

@@ -148,7 +148,7 @@ export async function runDoctrineAudit() {
       gate: "Revenue Proof",
       issue: "No active clients are recorded after initial outreach volume.",
       metric: `${clients.length} clients, ${sent} sent outreach records`,
-      mitigation: "Tighten positioning around timing intelligence, strengthen sample preview, and test a lower-friction sample-request path before broad scaling."
+      mitigation: "Tighten positioning around early-warning demand intelligence, strengthen sample preview, and test a lower-friction sample-request path before broad scaling."
     });
   }
 

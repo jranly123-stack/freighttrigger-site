@@ -20,7 +20,7 @@ from urllib.parse import urlparse
 ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = ROOT / "run_outputs"
 ENV_PATH = ROOT / ".env"
-SAMPLE_URL = "https://getfreighttrigger.com/sample-feed.html"
+SAMPLE_URL = "https://getfreighttrigger.com/sample-feed"
 STRIPE_URL = "https://buy.stripe.com/14A8wO6R4df565JbjYfAc00"
 PUBLIC_SITE_URL = "https://getfreighttrigger.com"
 
@@ -237,9 +237,9 @@ def outreach_body(company: str) -> str:
             "",
             "I found your team while mapping logistics providers that sell into food/bev, refrigerated, and time-sensitive freight.",
             "",
-            "FreightTrigger is a weekly shipper timing feed for sales teams that need a stronger reason to reach out than a static shipper list.",
+            "FreightTrigger is an early-warning freight demand feed. It looks for company events that may create future logistics pressure before they become obvious to everyone calling the same shipper list.",
             "",
-            "Each record starts with public business movement, then turns it into a freight read, contact route, and first-touch angle.",
+            "Each record starts with a company event, then turns it into freight interpretation, buyer/contact path, and a first-touch angle.",
             "",
             "Preview:",
             SAMPLE_URL,
@@ -329,7 +329,7 @@ def main() -> None:
                 outreach_records.append(
                     {
                         "Email Subject": analysis.get("email_subject")
-                        or "Food/bev shipper timing signals",
+                        or "Food/bev freight demand signals",
                         "Message": outreach_body(analysis.get("company_name") or title[:80]),
                         "Status": "Queued" if contact_email else "Needs Contact",
                     }

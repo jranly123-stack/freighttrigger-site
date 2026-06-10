@@ -157,7 +157,7 @@ function buildNeedsInfoReply(context: { from: string }) {
   return [
     "Good question.",
     "",
-    "FreightTrigger is a weekly shipper-timing feed for logistics sales teams. It is built to answer: who has a current business event worth contacting, why the timing matters, what freight angle fits, and what first touch should say.",
+    "FreightTrigger is an early-warning freight demand feed for logistics sales teams. It is built to answer: what company event happened, why it may create freight demand, who should your team contact, and what first touch should say.",
     "",
     "Preview:",
     sampleUrl,

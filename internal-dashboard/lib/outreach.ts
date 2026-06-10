@@ -90,7 +90,7 @@ export async function sendQueuedOutreach({ force = false } = {}) {
 
     await sendGmailMessage(
       email,
-      String(record.fields["Email Subject"] || "Food/bev shipper timing signals"),
+      String(record.fields["Email Subject"] || "Food/bev freight demand signals"),
       String(record.fields.Message || "")
     );
 

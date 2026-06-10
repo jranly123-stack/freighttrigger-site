@@ -23,7 +23,7 @@ distribution, or time-sensitive freight.
 Subject:
 
 ```text
-Food/bev shipper timing signals
+Food/bev freight demand signals
 ```
 
 Body:
@@ -33,12 +33,12 @@ Hi [Company] team,
 
 I found your team while mapping logistics providers that sell into food/bev, refrigerated, and time-sensitive freight.
 
-FreightTrigger is a weekly shipper timing feed for sales teams that need a stronger reason to reach out than a static shipper list.
+FreightTrigger is an early-warning freight demand feed for sales teams that need a reason to reach out before an account becomes obvious.
 
-Each record starts with public business movement, then turns it into a freight read, contact route, and first-touch angle.
+Each record starts with a company event, then turns it into freight interpretation, buyer/contact path, and a first-touch angle.
 
 Preview:
-https://getfreighttrigger.com/sample-feed.html
+https://getfreighttrigger.com/sample-feed
 
 The preview shows the shape of the record. The paid beta feed includes current accounts, source context, contact path, scoring notes, and outreach positioning.
 
@@ -57,7 +57,7 @@ FreightTrigger provides sales intelligence only. We do not broker freight, arran
 
 ## What The Email Reveals
 
-- FreightTrigger is a weekly timing feed.
+- FreightTrigger is an early-warning freight demand feed.
 - It is for logistics sales teams.
 - Initial vertical is food/bev, refrigerated, and time-sensitive freight.
 - The buyer gets a preview before paying.
@@ -79,7 +79,7 @@ FreightTrigger provides sales intelligence only. We do not broker freight, arran
 
 1. Prospect receives the email.
 2. Prospect clicks the public preview:
-   `https://getfreighttrigger.com/sample-feed.html`
+   `https://getfreighttrigger.com/sample-feed`
 3. Prospect sees a realistic feed preview with limited detail.
 4. Prospect can subscribe through Stripe:
    `https://buy.stripe.com/14A8wO6R4df565JbjYfAc00`

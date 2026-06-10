@@ -1,17 +1,17 @@
 # Sample Buyer Outreach Email
 
-Subject: Food/bev shipper timing signals
+Subject: Food/bev freight demand signals
 
 Hi Ridgeway Logistics team,
 
 I found your team while mapping logistics providers that sell into food/bev, refrigerated, and time-sensitive freight.
 
-FreightTrigger is a weekly shipper timing feed for sales teams that need a stronger reason to reach out than a static shipper list.
+FreightTrigger is an early-warning freight demand feed for sales teams that need a reason to reach out before an account becomes obvious.
 
-Each record starts with public business movement, then turns it into a freight read, contact route, and first-touch angle.
+Each record starts with a company event, then turns it into freight interpretation, buyer/contact path, and a first-touch angle.
 
 Preview:
-https://getfreighttrigger.com/sample-feed.html
+https://getfreighttrigger.com/sample-feed
 
 The preview shows the shape of the record. The paid beta feed includes current accounts, source context, contact path, scoring notes, and outreach positioning.
 
@@ -57,7 +57,7 @@ Subject: FreightTrigger sample signal feed
 
 Here is the FreightTrigger preview:
 
-https://getfreighttrigger.com/sample-feed.html
+https://getfreighttrigger.com/sample-feed
 
 The preview shows the shape of the record. The paid beta feed includes current accounts, source context, contact path, scoring notes, and outreach positioning.
 

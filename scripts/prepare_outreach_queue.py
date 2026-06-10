@@ -113,8 +113,8 @@ def build_message(company: str) -> str:
     return (
         f"Hi {company} team,\n\n"
         "I found your team while mapping logistics providers that sell into food/bev, refrigerated, and time-sensitive freight.\n\n"
-        "FreightTrigger is a weekly shipper timing feed for sales teams that need a stronger reason to reach out than a static shipper list.\n\n"
-        "Each record starts with public business movement, then turns it into a freight read, contact route, and first-touch angle.\n\n"
+        "FreightTrigger is an early-warning freight demand feed. It looks for company events that may create future logistics pressure before they become obvious to everyone calling the same shipper list.\n\n"
+        "Each record starts with a company event, then turns it into freight interpretation, buyer/contact path, and a first-touch angle.\n\n"
         "Preview:\n"
         f"{SAMPLE_URL}\n\n"
         "The preview shows the shape of the record. The paid beta feed includes current accounts, source context, contact path, scoring notes, and outreach positioning.\n\n"
@@ -201,7 +201,7 @@ def main() -> None:
             continue
         company = fields.get("Company Name", "your team")
         target = fields.get("Target Vertical", "food/bev + reefer")
-        subject = "Food/bev shipper timing signals"
+        subject = "Food/bev freight demand signals"
         message = build_message(str(company))
         drafts.append(
             {
@@ -231,7 +231,7 @@ def main() -> None:
             {
                 "id": record["id"],
                 "fields": {
-                    "Email Subject": "Food/bev shipper timing signals",
+                    "Email Subject": "Food/bev freight demand signals",
                     "Message": build_message(str(company)),
                     "AI Personalization Tips": (
                         f"{contact_gate_summary(prospect.get('fields', {}))}. "

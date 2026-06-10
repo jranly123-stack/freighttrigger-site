@@ -64,7 +64,7 @@ def build_needs_info_reply(email: str) -> str:
         [
             "Good question.",
             "",
-            "FreightTrigger is a weekly shipper-timing feed for logistics sales teams. It is built to answer: who has a current business event worth contacting, why the timing matters, what freight angle fits, and what first touch should say.",
+            "FreightTrigger is an early-warning freight demand feed for logistics sales teams. It is built to answer: what company event happened, why it may create freight demand, who should your team contact, and what first touch should say.",
             "",
             "Preview:",
             link_with_context(SAMPLE_URL, "Needs Info", email),
@@ -124,7 +124,7 @@ def conversion_block(gmail_id: str, email: str, intent: str, subject: str, body:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--email", default="buyer@example-logistics.com")
-    parser.add_argument("--subject", default="Re: Food/bev shipper timing signals")
+    parser.add_argument("--subject", default="Re: Food/bev freight demand signals")
     parser.add_argument(
         "--body",
         default="Can you send more info? What does the paid feed include and how much is it?",

@@ -2,7 +2,7 @@ import { activeClients } from "./clients";
 import { createRecords, getSignalRows, patchRecords } from "./airtable";
 import { sendGmailMessage } from "./gmail";
 
-const SAMPLE_URL = "https://getfreighttrigger.com/sample-feed.html";
+const SAMPLE_URL = "https://getfreighttrigger.com/sample-feed";
 
 function normalizeEmail(value: unknown) {
   return String(value || "").trim().toLowerCase();

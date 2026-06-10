@@ -1,18 +1,18 @@
-# Sample Monday FreightTrigger Signal Feed
+# Sample Monday FreightTrigger Demand Signal Feed
 
 Subject: FreightTrigger Monday Signal Feed - 2026-06-08
 
 Period: 2026-06-01 to 2026-06-08
 
-Coverage: food/bev, reefer, and cold-chain-adjacent shipper opportunities for this sales week.
+Coverage: food/bev, reefer, and cold-chain-adjacent early-warning freight demand signals for this sales week.
 
-Use this feed to prioritize prospecting. This is sales intelligence, not verified buyer intent. Each record separates observed evidence from inferred freight need.
+Use this feed to prioritize prospecting before accounts become obvious. This is sales intelligence, not verified buyer intent. Each record separates observed evidence from inferred freight need.
 
 ## How To Use This Week
 
 1. Start with the highest-priority records.
 2. Open the evidence URL before outreach.
-3. Lead with the trigger, not a generic capacity pitch.
+3. Lead with the company event, not a generic capacity pitch.
 4. Use the contact path to route the first touch.
 5. Mark bad fits quickly so future scoring improves.
 
@@ -24,7 +24,7 @@ Vertical: Produce distribution / refrigerated regional distribution
 
 Region: Southeast United States
 
-Trigger summary:
+Event / trigger summary:
 Public business movement indicates expanded regional distribution capacity and active operations coordination language around transportation and warehouse flow.
 
 Observed evidence:
@@ -56,7 +56,7 @@ Vertical: Frozen meals / cold-chain manufacturing
 
 Region: Upper Midwest
 
-Trigger summary:
+Event / trigger summary:
 Production and operating-language changes suggest outbound cold-chain planning may be entering a review window.
 
 Observed evidence:
@@ -88,7 +88,7 @@ Vertical: Beverage distribution / regional replenishment
 
 Region: South Central United States
 
-Trigger summary:
+Event / trigger summary:
 Regional movement and distribution footprint language suggests route density, warehousing, and replenishment timing may be changing.
 
 Observed evidence:

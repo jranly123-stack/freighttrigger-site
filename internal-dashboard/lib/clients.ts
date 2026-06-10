@@ -63,7 +63,7 @@ export async function sendOnboardingEmail(client: AirtableRecord) {
     "",
     "What you bought:",
     "",
-    "A weekly food/bev and reefer-focused shipper timing feed for logistics sales teams. Each record is built to answer: who should your team look at, why now, what changed, what freight need may be implied, how to route contact, and what angle to use.",
+    "A weekly food/bev and reefer-focused early-warning freight demand feed for logistics sales teams. Each record is built to answer: what event happened, why it may create freight demand, who your team should contact, and what angle to use.",
     "",
     "Delivery:",
     "",
