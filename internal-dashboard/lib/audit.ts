@@ -10,6 +10,14 @@ type Finding = {
   metric?: string;
 };
 
+type AuditAction = {
+  priority: Severity;
+  owner: string;
+  action: string;
+  assetCreated: string;
+  successMetric: string;
+};
+
 function countBy(records: Awaited<ReturnType<typeof listRecords>>, field: string) {
   const counts: Record<string, number> = {};
   for (const record of records) {
@@ -41,6 +49,98 @@ function formatFinding(finding: Finding) {
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+function actionForFinding(finding: Finding): AuditAction {
+  const defaults: AuditAction = {
+    priority: finding.severity,
+    owner: "CEO/Mastermind + Automation/Software Architect",
+    action: finding.mitigation,
+    assetCreated: `${finding.gate} operating rule`,
+    successMetric: "Finding is absent from the next doctrine audit."
+  };
+
+  switch (finding.gate) {
+    case "Signal Supply":
+      return {
+        ...defaults,
+        owner: "Signal Acquisition + Evidence/Validation",
+        action: "Run signal-scan, confirm DataForSEO/Firecrawl availability, and reject records without evidence URLs.",
+        assetCreated: "Source health and evidence-quality checkpoint",
+        successMetric: "At least 10 source-backed signal rows exist with evidence URLs."
+      };
+    case "Evidence Quality":
+      return {
+        ...defaults,
+        owner: "Evidence/Validation + Freight Interpretation",
+        action: "Hold weak rows from paid reports, rerun extraction, and downgrade confidence when source support is incomplete.",
+        assetCreated: "Evidence downgrade and report-exclusion rule",
+        successMetric: "0 client-deliverable signal rows are missing evidence URLs."
+      };
+    case "Buyer Contact Path":
+      return {
+        ...defaults,
+        owner: "Contact/Org Path",
+        action: "Route weak shipper contact paths through enrichment before adding those records to a premium feed.",
+        assetCreated: "Verified buyer/contact-path gate",
+        successMetric: "Each paid-feed record has a public route plus verified email/phone only when sourced."
+      };
+    case "Contact Quality":
+      return {
+        ...defaults,
+        owner: "Contact/Org Path + Outbound/Positioning",
+        action: "Use Clay CSV enrichment and direct-domain matching before increasing outbound volume.",
+        assetCreated: "Contact-confidence gate",
+        successMetric: "Needs Contact prospects fall below 25% and queued direct-domain outreach increases."
+      };
+    case "Conversion Learning":
+      return {
+        ...defaults,
+        owner: "CEO/Mastermind + Outbound/Positioning",
+        action: "Audit deliverability, buyer fit, sample clicks, subject line, and source quality before scaling sends.",
+        assetCreated: "No-reply mitigation playbook",
+        successMetric: "Next 25 sends produce tracked clicks or warm replies, or trigger a copy/source pivot."
+      };
+    case "Outreach Queue":
+      return {
+        ...defaults,
+        owner: "Automation/Software Architect + Contact/Org Path",
+        action: "Regenerate compliant outreach drafts only for qualified prospects with direct-domain contacts.",
+        assetCreated: "Send-ready queue regeneration rule",
+        successMetric: "Qualified direct-contact prospects create queued outreach without bypassing suppression."
+      };
+    case "Reply Noise":
+      return {
+        ...defaults,
+        owner: "Compliance/Risk + Automation/Software Architect",
+        action: "Suppress vendor/tool domains, dedupe reply records, and exclude non-buyer replies from conversion metrics.",
+        assetCreated: "Reply-noise suppression rule",
+        successMetric: "Bad-fit/tool replies stop appearing as warm buyer intent."
+      };
+    case "Revenue Proof":
+      return {
+        ...defaults,
+        owner: "CEO/Mastermind + Outbound/Positioning",
+        action: "Treat zero paid clients after sends as an offer/copy/audience test failure, not a volume-only problem.",
+        assetCreated: "Revenue-proof decision gate",
+        successMetric: "A defined offer/copy/source variant produces checkout clicks or paid conversion."
+      };
+    default:
+      return defaults;
+  }
+}
+
+function operatingPosture(findings: Finding[]) {
+  if (findings.some((finding) => finding.severity === "critical")) {
+    return "PAUSE SCALE: fix critical operating breaks before new volume.";
+  }
+  if (findings.some((finding) => finding.severity === "high")) {
+    return "CONTROLLED TESTING: run low-volume acquisition only while repairing high-severity gates.";
+  }
+  if (findings.some((finding) => finding.severity === "medium")) {
+    return "MEASURED SCALE: increase volume only inside existing quality and suppression gates.";
+  }
+  return "STEADY STATE: continue scheduled operation and monitor conversion data.";
 }
 
 export async function runDoctrineAudit() {
@@ -182,9 +282,13 @@ export async function runDoctrineAudit() {
   }
 
   findings.sort((a, b) => severityRank(a.severity) - severityRank(b.severity));
+  const actions = findings.map(actionForFinding);
+  const posture = operatingPosture(findings);
 
   const summary = [
     "FreightTrigger Doctrine Audit",
+    "",
+    `Operating Posture: ${posture}`,
     "",
     "Metrics:",
     `Signals: ${signals.length}`,
@@ -197,7 +301,17 @@ export async function runDoctrineAudit() {
     `Suppressions: ${suppressions.length}`,
     "",
     "Findings:",
-    ...findings.map(formatFinding)
+    ...findings.map(formatFinding),
+    "",
+    "Action Queue:",
+    ...actions.map((action, index) =>
+      [
+        `${index + 1}. [${action.priority.toUpperCase()}] ${action.owner}`,
+        `Action: ${action.action}`,
+        `Asset: ${action.assetCreated}`,
+        `Success metric: ${action.successMetric}`
+      ].join("\n")
+    )
   ].join("\n\n");
 
   const [auditRecord] = await createRecords("Reports", [
@@ -226,6 +340,8 @@ export async function runDoctrineAudit() {
       replyIntent,
       reportStatus
     },
-    findings
+    posture,
+    findings,
+    actions
   };
 }
