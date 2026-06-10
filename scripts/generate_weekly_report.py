@@ -48,6 +48,12 @@ def list_records(table: str) -> list[dict]:
             return records
 
 
+def note_value(notes: str, label: str) -> str:
+    escaped = re.escape(label)
+    match = re.search(rf"{escaped}:\s*([^\n]+)", notes, re.IGNORECASE)
+    return match.group(1).strip() if match else ""
+
+
 def main() -> None:
     load_env()
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
@@ -63,6 +69,7 @@ def main() -> None:
         company_id = (fields.get("Company") or [None])[0]
         company = companies.get(company_id or "", {}).get("fields", {})
         score = scores_by_company.get(company_id or "", {}).get("fields", {})
+        notes = str(score.get("Notes", ""))
         rows.append(
             {
                 "company": company.get("Company Name", "Unknown"),
@@ -70,9 +77,20 @@ def main() -> None:
                 "location": company.get("Location", ""),
                 "trigger": fields.get("Trigger Summary", ""),
                 "evidence": fields.get("Evidence URL", ""),
+                "evidence_summary": note_value(notes, "Evidence summary") or fields.get("Trigger Summary", ""),
+                "why_it_matters": note_value(notes, "Why it matters for freight")
+                or score.get("Freight Relevance", ""),
+                "likely_need": note_value(notes, "Likely need") or score.get("Freight Relevance", ""),
+                "best_fit_provider": note_value(notes, "Best-fit provider type")
+                or note_value(notes, "Likely need")
+                or score.get("Freight Relevance", ""),
+                "buyer_path": note_value(notes, "Buyer path"),
+                "contact_path": note_value(notes, "Contact path"),
+                "outreach_angle": note_value(notes, "Outreach angle"),
+                "next_action": note_value(notes, "Next action")
+                or "Open the evidence URL, verify the operating change, then route outreach through the listed buyer path.",
                 "urgency": score.get("Urgency Score", 0),
                 "confidence": score.get("Confidence Score", 0),
-                "notes": score.get("Notes", ""),
             }
         )
     rows.sort(key=lambda row: int(row.get("urgency") or 0), reverse=True)
@@ -96,13 +114,21 @@ def main() -> None:
                 f"Urgency: {row['urgency']}/100",
                 f"Confidence: {row['confidence']}/100",
                 "",
-                f"Trigger: {row['trigger']}",
+                "Required record:",
                 "",
-                f"Evidence: {row['evidence']}",
-                "",
-                "Signal notes:",
-                "",
-                str(row["notes"]),
+                f"Company: {row['company']}",
+                f"Trigger / change event: {row['trigger']}",
+                f"Evidence URL: {row['evidence']}",
+                f"Evidence summary: {row['evidence_summary']}",
+                f"Why it matters for freight: {row['why_it_matters']}",
+                f"Likely freight need: {row['likely_need']}",
+                f"Best-fit provider type: {row['best_fit_provider']}",
+                f"Buyer/contact path: {row['buyer_path']}",
+                f"Contact route: {row['contact_path'] or 'Review required'}",
+                f"Outreach angle: {row['outreach_angle']}",
+                f"Urgency score: {row['urgency']}/100",
+                f"Confidence score: {row['confidence']}/100",
+                f"Next action: {row['next_action']}",
                 "",
                 "---",
                 "",

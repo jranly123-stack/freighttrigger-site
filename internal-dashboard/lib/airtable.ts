@@ -142,9 +142,13 @@ export async function createReviewCandidates(candidates: Candidate[]) {
     "Confidence Score": scoreValue(candidate.confidence_score),
     "Freight Relevance": String(candidate.freight_relevance || "Medium"),
     "Notes": [
+      `Evidence summary: ${candidate.trigger_summary || candidate.source_title || "Review required"}`,
+      `Why it matters for freight: ${candidate.freight_relevance || "Possible freight relevance requires review."}`,
       `Likely need: ${candidate.likely_freight_need || "Review required"}`,
+      `Best-fit provider type: ${candidate.likely_freight_need || "Review required"}`,
       `Buyer path: ${candidate.buyer_path || "Review required"}`,
       `Outreach angle: ${candidate.outreach_angle || "Review required"}`,
+      "Next action: Open the evidence URL, verify the operating change, then route outreach through the listed buyer path.",
       `Automated source: ${candidate.source_title}`,
       "Status: review candidate; not approved for client delivery."
     ].join("\n"),
@@ -226,13 +230,17 @@ export async function getSignalRows() {
       location: String(company?.fields.Location ?? ""),
       trigger: String(signal.fields["Trigger Summary"] ?? ""),
       evidenceUrl: String(signal.fields["Evidence URL"] ?? ""),
+      evidenceSummary: noteValue(notes, "Evidence summary") || String(signal.fields["Trigger Summary"] ?? ""),
+      whyItMatters: noteValue(notes, "Why it matters for freight") || String(score?.fields["Freight Relevance"] ?? ""),
       urgency: Number(score?.fields["Urgency Score"] ?? 0),
       confidence: Number(score?.fields["Confidence Score"] ?? 0),
       relevance: String(score?.fields["Freight Relevance"] ?? "Unscored"),
       likelyNeed: noteValue(notes, "Likely need"),
+      bestFitProvider: noteValue(notes, "Best-fit provider type") || noteValue(notes, "Likely need"),
       buyerPath,
       contactPath: contactPath(companyName, website, notes, buyerPath),
-      outreachAngle: noteValue(notes, "Outreach angle")
+      outreachAngle: noteValue(notes, "Outreach angle"),
+      nextAction: noteValue(notes, "Next action") || "Open the evidence URL, confirm the trigger, and lead with a coverage, routing, overflow, or backup-capacity review."
     };
   });
 }
