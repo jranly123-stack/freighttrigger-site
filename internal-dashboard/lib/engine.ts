@@ -1,5 +1,5 @@
 import { requireEnv } from "./local-env";
-import { searchWeb } from "./search";
+import { searchWeb, type SearchResult } from "./search";
 
 const QUERIES = [
   "food distributor expansion distribution center refrigerated 2026",
@@ -37,6 +37,13 @@ type EngineOptions = {
   deadlineMs?: number;
 };
 
+type Extraction = {
+  text: string;
+  source: "firecrawl" | "direct-fetch" | "search-snippet";
+  quality: "full" | "fallback" | "thin";
+  warning?: string;
+};
+
 async function jsonFetch<T>(url: string, init?: RequestInit & { timeoutMs?: number }): Promise<T> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), init?.timeoutMs ?? 15_000);
@@ -56,7 +63,7 @@ async function jsonFetch<T>(url: string, init?: RequestInit & { timeoutMs?: numb
   return response.json() as Promise<T>;
 }
 
-async function scrape(url: string) {
+async function scrapeWithFirecrawl(url: string) {
   const data = await jsonFetch<{ data?: { markdown?: string; content?: string } }>(
     "https://api.firecrawl.dev/v1/scrape",
     {
@@ -70,6 +77,61 @@ async function scrape(url: string) {
     }
   );
   return (data.data?.markdown || data.data?.content || "").slice(0, 6000);
+}
+
+function htmlToText(html: string) {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+async function directFetchText(url: string) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8_000);
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      cache: "no-store",
+      headers: {
+        "User-Agent": "Mozilla/5.0 FreightTrigger signal validation bot; public-source review"
+      }
+    });
+    if (!response.ok) throw new Error(`${response.status}: direct fetch failed`);
+    const html = await response.text();
+    return htmlToText(html).slice(0, 6000);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function extractSource(result: SearchResult): Promise<Extraction> {
+  const url = result.link || "";
+  const snippet = `${result.title || ""}\n${result.snippet || ""}`.trim();
+
+  try {
+    const text = await scrapeWithFirecrawl(url);
+    return { text, source: "firecrawl", quality: text.length >= 1200 ? "full" : "fallback" };
+  } catch (firecrawlError) {
+    const warning = `firecrawl_failed: ${String(firecrawlError).slice(0, 140)}`;
+    try {
+      const text = await directFetchText(url);
+      if (text.length >= 300) {
+        return { text, source: "direct-fetch", quality: "fallback", warning };
+      }
+    } catch {
+      // Keep moving to snippet fallback. Vendor/source failure must not kill the run.
+    }
+
+    if (snippet.length >= 80) {
+      return { text: snippet, source: "search-snippet", quality: "thin", warning };
+    }
+    throw new Error(warning);
+  }
 }
 
 async function classify(title: string, url: string, text: string): Promise<Omit<Candidate, "source_title" | "source_url" | "query">> {
@@ -95,7 +157,7 @@ async function classify(title: string, url: string, text: string): Promise<Omit<
           content:
             "You are FreightTrigger's shipper signal scoring agent. Classify this public source for food/bev or reefer-adjacent logistics sales relevance. " +
             "Return strict JSON with keys: company, trigger_summary, likely_freight_need, buyer_path, outreach_angle, urgency_score, confidence_score, freight_relevance, include, reason.\n\n" +
-            "Rules: urgency_score and confidence_score must be integers from 0 to 100. freight_relevance must be High, Medium, or Low. include must be true only when the source points to a specific company/account with a plausible current logistics change window. Reject generic articles, login pages, broad industry statistics, and job aggregator pages.\n\n" +
+            "Rules: urgency_score and confidence_score must be integers from 0 to 100. freight_relevance must be High, Medium, or Low. include must be true only when the source points to a specific company/account with a plausible current logistics change window. Reject generic articles, login pages, broad industry statistics, and job aggregator pages. If source text is thin or only a search snippet, use lower confidence and include only when the evidence still identifies a specific company and change event.\n\n" +
             `Title: ${title}\nURL: ${url}\nSource text:\n${text}`
         }
       ]
@@ -136,18 +198,26 @@ export async function runEngine(options: EngineOptions = {}) {
       seen.add(url);
 
       try {
-        const text = await scrape(url);
-        if (text.length < 300) {
+        const extraction = await extractSource(result);
+        const text = extraction.text;
+        if (text.length < 300 && extraction.source !== "search-snippet") {
           logs.push(`skipped: ${title} | too little extractable text`);
           continue;
         }
         const analysis = await classify(title, url, text);
+        if (extraction.source === "search-snippet") {
+          analysis.confidence_score = Math.min(Number(analysis.confidence_score || 0), 62);
+          analysis.reason = `${analysis.reason || "Snippet-only source."} Evidence quality capped because Firecrawl/direct extraction failed.`;
+        } else if (extraction.source === "direct-fetch") {
+          analysis.confidence_score = Math.min(Number(analysis.confidence_score || 0), 72);
+          analysis.reason = `${analysis.reason || "Direct fetch fallback."} Firecrawl unavailable; evidence requires operator review before client delivery.`;
+        }
         if (!analysis.include) {
           logs.push(`rejected: ${title}`);
           continue;
         }
         candidates.push({ ...analysis, source_title: title, source_url: url, query });
-        logs.push(`scored: ${title}`);
+        logs.push(`scored: ${title} | extraction=${extraction.source} | quality=${extraction.quality}${extraction.warning ? ` | ${extraction.warning}` : ""}`);
       } catch (error) {
         logs.push(`skipped: ${title} | ${String(error).slice(0, 160)}`);
       }

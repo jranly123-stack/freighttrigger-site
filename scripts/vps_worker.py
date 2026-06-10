@@ -29,18 +29,31 @@ EASTERN = ZoneInfo("America/New_York")
 
 SCHEDULE = {
     "09:00": ["signal-scan"],
+    "09:05": ["audit-loop"],
     "09:15": ["prospect-acquisition"],
+    "09:20": ["audit-loop"],
     "09:30": ["outreach-send"],
+    "09:35": ["audit-loop"],
     "10:00": ["reply-loop"],
+    "10:05": ["audit-loop"],
     "11:30": ["outreach-send"],
+    "11:35": ["audit-loop"],
     "13:15": ["prospect-acquisition"],
+    "13:20": ["audit-loop"],
     "13:30": ["outreach-send"],
+    "13:35": ["audit-loop"],
     "14:00": ["reply-loop"],
+    "14:05": ["audit-loop"],
     "15:30": ["outreach-send"],
+    "15:35": ["audit-loop"],
     "17:15": ["prospect-acquisition"],
+    "17:20": ["audit-loop"],
     "17:30": ["outreach-send"],
+    "17:35": ["audit-loop"],
     "18:00": ["reply-loop"],
+    "18:05": ["audit-loop"],
     "19:30": ["outreach-send"],
+    "19:35": ["audit-loop"],
 }
 
 MONDAY_EXTRA = {
