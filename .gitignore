@@ -5,6 +5,7 @@ reports/
 .env
 .env.*
 !.env.example
+.vercel/
 run_outputs/
 exports/*.csv
 __pycache__/
