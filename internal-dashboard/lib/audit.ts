@@ -109,6 +109,14 @@ function actionForFinding(finding: Finding): AuditAction {
         assetCreated: "Send-ready queue regeneration rule",
         successMetric: "Qualified direct-contact prospects create queued outreach without bypassing suppression."
       };
+    case "Outreach Queue Depth":
+      return {
+        ...defaults,
+        owner: "Contact/Org Path + Automation/Software Architect",
+        action: "Increase verified direct-contact inventory through Clay CSV enrichment before scaling send frequency.",
+        assetCreated: "Minimum send-ready inventory gate",
+        successMetric: "At least 5 queued direct-domain outreach records are available before each business-day send block."
+      };
     case "Reply Noise":
       return {
         ...defaults,
@@ -167,6 +175,9 @@ export async function runDoctrineAudit() {
   const queued = outreachStatus.Queued || 0;
   const needsContact = prospectStatus["Needs Contact"] || 0;
   const qualified = prospectStatus.Qualified || 0;
+  const directContactProspects = prospects.filter((record) =>
+    String(record.fields["Contact Email"] || "").trim().includes("@")
+  ).length;
   const badFitReplies = replyIntent["Bad Fit"] || 0;
   const interestedReplies = (replyIntent.Interested || 0) + (replyIntent["Needs Info"] || 0);
   const draftReports = reportStatus.Draft || 0;
@@ -229,6 +240,16 @@ export async function runDoctrineAudit() {
       issue: "Qualified prospects exist but no queued outreach is available.",
       metric: `${qualified} qualified prospects, ${queued} queued outreach records`,
       mitigation: "Regenerate compliant outreach drafts for qualified prospects and preserve suppression/domain-match gates."
+    });
+  }
+
+  if (qualified >= 10 && queued > 0 && queued < 5) {
+    findings.push({
+      severity: "medium",
+      gate: "Outreach Queue Depth",
+      issue: "Send-ready outreach volume is too thin for meaningful market feedback.",
+      metric: `${queued} queued outreach records, ${qualified} qualified prospects, ${directContactProspects} prospects with direct email`,
+      mitigation: "Use Clay CSV enrichment and verified-domain email gates to raise queued direct-contact records before increasing send frequency."
     });
   }
 
