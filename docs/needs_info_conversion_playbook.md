@@ -13,13 +13,13 @@ Outbound remains gated by `OUTREACH_ENABLED=false` until buyer-flow approval is 
 Interested:
 - Send the public sample preview.
 - Send the beta checkout link.
-- Explain that checkout delivers the current feed immediately and Monday updates continue weekly.
+- Explain that checkout delivers the current opportunity queue immediately and Monday updates continue weekly.
 - Ask for target region/service fit if they want to sanity-check before purchase.
 
 Needs Info:
 - Answer what FreightTrigger is.
 - Show the public partial sample.
-- Explain what the paid beta feed includes.
+- Explain what the paid beta queue includes.
 - Link checkout.
 - Invite a direct reply with target lane, region, or customer type.
 

@@ -4,10 +4,10 @@
 
 FreightTrigger is not lead generation software.
 
-FreightTrigger is early-warning freight demand intelligence.
+FreightTrigger is logistics opportunity intelligence.
 
-Software is the delivery mechanism. The product is earlier detection of
-freight-relevant demand windows before they become obvious to competitors.
+Software is the delivery mechanism. The product is the interpretation layer that
+turns business-change data into prioritized logistics opportunities.
 
 ## Core Thesis
 
@@ -17,10 +17,31 @@ Most freight sales teams start here:
 
 FreightTrigger moves upstream:
 
-`Company event -> possible freight demand -> signal detected -> freight read -> buyer path -> outreach angle -> sales action`
+`Company event -> logistics interpretation -> opportunity priority -> buyer path -> outreach angle -> sales action`
 
-The further upstream the signal is detected, the more valuable the information
-becomes.
+The further upstream the opportunity is detected, the more valuable the
+information becomes.
+
+## Product Progression
+
+A lead list says:
+
+`Here are companies.`
+
+A news feed says:
+
+`Here are business events.`
+
+A signal says:
+
+`This company changed.`
+
+FreightTrigger says:
+
+`This company changed, here is why it may matter for logistics, who should be contacted, how urgent it is, and what angle should be tested.`
+
+The public product should therefore be framed as a prioritized opportunity queue,
+not as a database or generic signal feed.
 
 ## Moat
 
@@ -34,15 +55,16 @@ Surface data can be copied. The compounding asset is knowing which events,
 verticals, source types, contact paths, and outreach angles actually produce
 replies, subscriptions, renewals, and client value.
 
-## Signal Standard
+## Opportunity Standard
 
-A weak signal is an isolated fact with no freight implication.
+A weak opportunity is an isolated fact with no freight implication.
 
 Example weak signal:
 
 `Company hired 15 employees.`
 
-A strong signal combines multiple facts into a freight-relevant interpretation.
+A strong opportunity combines multiple facts into a freight-relevant
+interpretation.
 
 Example strong signal:
 
@@ -51,18 +73,35 @@ Example strong signal:
 That pattern may indicate freight pressure because it combines operating
 capacity, physical footprint, equipment movement, and logistics coordination.
 
+## Tier 1 Opportunity Inputs
+
+These should anchor the weekly queue:
+
+1. New warehouse or distribution center openings.
+2. Facility expansion, added production capacity, or plant footprint expansion.
+3. Geographic expansion into new regions or distribution markets.
+4. Specific logistics, transportation, warehouse, distribution, supply-chain, or procurement hiring.
+5. New manufacturing contracts, customer wins, supply agreements, or production increases.
+
+Specific hiring is underweighted by generic lead vendors. A company hiring a
+Transportation Manager, Logistics Coordinator, Supply Chain Director,
+Distribution Manager, Warehouse Manager, or Procurement Manager may be closer to
+a logistics conversation than a company with a generic growth article.
+
 ## Public Positioning
 
 Use:
 
-- Early-warning freight demand intelligence
-- Event-driven freight sales intelligence
+- Logistics opportunity intelligence
+- Logistics timing intelligence
+- Logistics change intelligence
+- Prioritized opportunity queue
+- Event-driven logistics sales intelligence
 - Freight-relevant business events
-- Demand signals
 - Timing windows
 - Freight interpretation
 - Buyer/contact path
-- Sales-action feed
+- Sales-action queue
 
 Avoid:
 
@@ -86,6 +125,14 @@ A broker buys:
 - better customer timing
 - less wasted prospecting
 - more chances to reach shippers before competitors
+
+The buyer does not need 500 names. The buyer needs a decision queue:
+
+- call this company first
+- call this company second
+- ignore these weak records
+- use this evidence-backed angle
+- route through this buyer path
 
 Every page, email, report, and dashboard should make that clear without claiming
 certainty where only evidence-backed inference exists.

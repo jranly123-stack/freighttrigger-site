@@ -11,9 +11,9 @@ Completed:
 - API keys loaded locally
 - Airtable system of record
 - Real seed data from the first researched report
-- First one-shot signal discovery pipeline
+- First one-shot opportunity discovery pipeline
 - Internal `triggerops` Vercel dashboard
-- Scheduled signal scan and controlled outreach routes
+- Scheduled opportunity scan and controlled outreach routes
 - Gmail API sending and inbox classification foundation
 - Stripe webhook/onboarding code path
 - 8-agent operating model
@@ -22,9 +22,9 @@ Completed:
 
 Active Stripe product:
 
-- **Beta FreightTrigger Signal Feed**
+- **Beta FreightTrigger Opportunity Queue**
 - `$497/month`
-- Monday trigger-scored shipper opportunities with evidence, likely freight need, buyer role/contact path, urgency/confidence scoring, and outreach angle for the sales week ahead.
+- Monday prioritized logistics opportunities with evidence, likely freight need, buyer role/contact path, urgency/confidence scoring, and outreach angle for the sales week ahead.
 
 Keep this as the only public checkout product until the delivery engine has repeatable data quality.
 
@@ -45,25 +45,25 @@ Reason:
 ## Internal Engine Path
 
 1. Airtable is the system of record.
-2. Seeded real signals replace fake sample data.
+2. Seeded real opportunities replace fake sample data.
 3. One-shot pipeline discovers candidates:
    `search -> extract -> classify -> score -> local candidate output`
 4. Review gate prevents noisy data from entering Airtable.
 5. Qualified candidates are inserted into Airtable.
 6. Reports are generated from Airtable.
-7. Outreach angles are generated from the signal record.
+7. Outreach angles are generated from the opportunity record.
 8. Prospect acquisition creates broker/3PL buyer records.
 9. Controlled outreach sends only during weekday business hours.
 10. Replies are classified into interested, sample requested, objection, unsubscribe, bad fit, and follow-up states.
 11. Stripe subscription events create/update client records and trigger onboarding email.
-12. Weekly report delivery sends active clients the current signal feed.
+12. Weekly report delivery sends active clients the current opportunity queue.
 13. Reply and subscription outcomes feed back into prospect status and scoring notes.
 
 ## 8-Agent Operating Loop
 
 1. CEO/Mastermind Agent chooses vertical, pricing, and kill/scale decisions.
 2. Signal Acquisition Agent finds candidate business movement.
-3. Shipper Scoring Agent scores urgency, relevance, and confidence.
+3. Opportunity Scoring Agent scores urgency, relevance, and confidence.
 4. Contact/Org Agent maps buyer role and contact path.
 5. Lane/Need Intelligence Agent infers freight/service fit.
 6. Outbound Angle Agent writes hooks and follow-up logic.
@@ -82,8 +82,8 @@ Use Vercel/vibe code for the internal app only:
 
 Current/next internal app screens:
 
-- Signal candidate review
-- Airtable signal database view
+- Opportunity candidate review
+- Airtable opportunity database view
 - Report builder
 - Client feed generator
 - Outreach draft generator

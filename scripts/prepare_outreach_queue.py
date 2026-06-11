@@ -113,12 +113,12 @@ def build_message(company: str) -> str:
     return (
         f"Hi {company} team,\n\n"
         "I found your team while mapping logistics providers that sell into food/bev, refrigerated, and time-sensitive freight.\n\n"
-        "FreightTrigger is an early-warning freight demand feed. It looks for company events that may create future logistics pressure before they become obvious to everyone calling the same shipper list.\n\n"
-        "Each record starts with a company event, then turns it into freight interpretation, buyer/contact path, and a first-touch angle.\n\n"
+        "FreightTrigger is a weekly logistics opportunity queue. It turns business-change data into a prioritized list of companies where a logistics conversation may be worth testing before the account shows up on another static shipper list.\n\n"
+        "Each record answers: what changed, why it may matter for freight, who to contact, and what angle to test.\n\n"
         "Preview:\n"
         f"{SAMPLE_URL}\n\n"
-        "The preview shows the shape of the record. The paid beta feed includes current accounts, source context, contact path, scoring notes, and outreach positioning.\n\n"
-        "Beta is $497/month. Checkout delivers the current feed immediately, then Monday updates continue each week:\n"
+        "The preview shows the shape of the record without exposing the current-week queue. The paid beta includes current accounts, source context, contact path, scoring notes, and outreach positioning.\n\n"
+        "Beta is $497/month. Checkout delivers the current queue immediately, then Monday updates continue each week:\n"
         f"{STRIPE_URL}\n\n"
         f"Website: {PUBLIC_SITE_URL}\n\n"
         "If this is not relevant, reply \"not a fit\" and I will close the loop.\n\n"
@@ -201,7 +201,7 @@ def main() -> None:
             continue
         company = fields.get("Company Name", "your team")
         target = fields.get("Target Vertical", "food/bev + reefer")
-        subject = "Food/bev freight demand signals"
+        subject = "Food/bev logistics opportunity queue"
         message = build_message(str(company))
         drafts.append(
             {
@@ -212,7 +212,7 @@ def main() -> None:
                 "AI Personalization Tips": (
                     f"Buyer appears relevant for {target}. "
                     f"{contact_gate_summary(fields)}. "
-                    "Keep first touch concise and direct to sample feed."
+                    "Keep first touch concise and direct to sample queue."
                 ),
             }
         )
@@ -231,11 +231,11 @@ def main() -> None:
             {
                 "id": record["id"],
                 "fields": {
-                    "Email Subject": "Food/bev freight demand signals",
+                    "Email Subject": "Food/bev logistics opportunity queue",
                     "Message": build_message(str(company)),
                     "AI Personalization Tips": (
                         f"{contact_gate_summary(prospect.get('fields', {}))}. "
-                        "Use the partial preview as the hook. Do not expose the full source trail before checkout."
+                        "Use the partial preview as the hook. Do not expose the current-week source trail before checkout."
                     ),
                 },
             }

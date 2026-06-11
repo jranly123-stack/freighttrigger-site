@@ -1,21 +1,21 @@
 # Sample Buyer Outreach Email
 
-Subject: Food/bev freight demand signals
+Subject: Food/bev logistics opportunity queue
 
 Hi Ridgeway Logistics team,
 
 I found your team while mapping logistics providers that sell into food/bev, refrigerated, and time-sensitive freight.
 
-FreightTrigger is an early-warning freight demand feed for sales teams that need a reason to reach out before an account becomes obvious.
+FreightTrigger is a weekly logistics opportunity queue. It turns business-change data into a prioritized list of companies where a logistics conversation may be worth testing before the account shows up on another static shipper list.
 
-Each record starts with a company event, then turns it into freight interpretation, buyer/contact path, and a first-touch angle.
+Each record answers: what changed, why it may matter for freight, who to contact, and what angle to test.
 
 Preview:
 https://getfreighttrigger.com/sample-feed
 
-The preview shows the shape of the record. The paid beta feed includes current accounts, source context, contact path, scoring notes, and outreach positioning.
+The preview shows the shape of the record without exposing the current-week queue. The paid beta includes current accounts, source context, contact path, scoring notes, and outreach positioning.
 
-Beta is $497/month. Checkout delivers the current feed immediately, then Monday updates continue each week:
+Beta is $497/month. Checkout delivers the current queue immediately, then Monday updates continue each week:
 https://buy.stripe.com/14A8wO6R4df565JbjYfAc00
 
 Website:
@@ -33,7 +33,7 @@ FreightTrigger provides sales intelligence only. We do not broker freight, arran
 Non-buyers see:
 
 - A short business-context email.
-- Public sample feed.
+- Public sample queue.
 - Stripe checkout link.
 - Website link.
 - Opt-out language.
@@ -41,11 +41,11 @@ Non-buyers see:
 They do not receive:
 
 - Full source URLs.
-- Live signal list.
+- Current-week opportunity queue.
 - Complete buyer/contact paths.
 - Scoring notes.
 - Full outreach position.
-- Weekly Monday feed.
+- Weekly Monday queue.
 
 ## What Happens If They Reply Interested
 
@@ -53,15 +53,15 @@ The reply loop classifies the response as `Interested` or `Needs Info`.
 
 The engine sends the sample reply:
 
-Subject: FreightTrigger sample signal feed
+Subject: FreightTrigger sample opportunity queue
 
 Here is the FreightTrigger preview:
 
 https://getfreighttrigger.com/sample-feed
 
-The preview shows the shape of the record. The paid beta feed includes current accounts, source context, contact path, scoring notes, and outreach positioning.
+The preview shows the shape of the record. The paid beta queue includes current opportunities, source context, contact path, scoring notes, and outreach positioning.
 
-If you want the current feed now, beta checkout is here. It delivers the current feed immediately, then Monday updates continue each week:
+If you want the current queue now, beta checkout is here. It delivers the current queue immediately, then Monday updates continue each week:
 
 https://buy.stripe.com/14A8wO6R4df565JbjYfAc00
 

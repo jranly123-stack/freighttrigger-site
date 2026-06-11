@@ -69,7 +69,7 @@ Checkout/purchase:
 - plan
 - checkout timestamp
 - onboarding email sent
-- current feed delivered
+- current opportunity queue delivered
 
 Client feedback:
 - useful signal
@@ -178,4 +178,3 @@ Kill or rewrite a variant when:
 - it creates trust/data objections
 - it gets unsubscribes
 - it attracts buyers outside food/bev, reefer, or logistics sales fit
-

@@ -189,9 +189,9 @@ def sample_reply() -> str:
             "",
             SAMPLE_URL,
             "",
-            "The preview shows the format. The paid beta feed includes current records with source context, contact route, scoring notes, and sales positioning.",
+            "The preview shows the format. The paid beta queue includes current opportunity records with source context, contact route, scoring notes, and sales positioning.",
             "",
-            "If you want the current feed now, beta checkout is here. Monday updates continue after that:",
+            "If you want the current queue now, beta checkout is here. Monday updates continue after that:",
             CHECKOUT_URL,
             "",
             "FreightTrigger provides sales intelligence only. We do not broker freight, arrange transportation, select carriers, handle loads, manage shipments, process contracts, store shipping documents, manage invoices, or move payments between shippers and carriers.",
@@ -280,7 +280,7 @@ def main() -> None:
                 {"Email": sender, "Reason": "Reply requested no further contact", "Date Added": str(date.today())},
             )
         if intent in {"Interested", "Needs Info"} and in_business_window() and auto_replies < MAX_AUTO_REPLIES:
-            gmail_send(token, sender, "FreightTrigger sample signal feed", sample_reply())
+            gmail_send(token, sender, "FreightTrigger sample opportunity queue", sample_reply())
             auto_replies += 1
         processed += 1
     print(f"classified {processed} recent inbox replies")

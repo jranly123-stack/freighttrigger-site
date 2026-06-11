@@ -20,9 +20,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = ROOT / "run_outputs"
 QUERIES = [
-    "food distributor expansion distribution center refrigerated 2026",
-    "beverage distributor new warehouse expansion 2026",
-    "food company hiring logistics transportation coordinator 2026",
+    "food beverage distributor new distribution center 2026",
+    "food beverage manufacturer facility expansion production line 2026",
+    "food beverage company geographic expansion new market distribution 2026",
+    "food beverage company hiring transportation manager logistics manager 2026",
+    "food manufacturer new customer contract increased production 2026",
+    "refrigerated food distributor warehouse expansion 2026",
 ]
 
 NOISE_DOMAINS = (
@@ -82,14 +85,19 @@ def openai_classify(title: str, url: str, text: str) -> dict:
     prompt = {
         "role": "user",
         "content": (
-            "You are FreightTrigger's shipper signal scoring agent. "
+            "You are FreightTrigger's logistics opportunity scoring agent. "
             "Classify this public source for food/bev or reefer-adjacent logistics sales relevance. "
-            "Return strict JSON with keys: company, trigger_summary, likely_freight_need, buyer_path, "
-            "outreach_angle, urgency_score, confidence_score, freight_relevance, include, reason.\n\n"
+            "Return strict JSON with keys: company, trigger_type, trigger_summary, likely_freight_need, "
+            "buyer_path, outreach_angle, urgency_score, confidence_score, freight_relevance, "
+            "opportunity_priority, include, reason.\n\n"
             "Rules: urgency_score and confidence_score must be integers from 0 to 100. "
             "freight_relevance must be High, Medium, or Low. include must be true only when the source "
-            "points to a specific company/account with a plausible current logistics change window. "
+            "points to a specific company/account with a plausible logistics opportunity window. "
             "Reject generic articles, login pages, broad industry statistics, and job aggregator pages.\n\n"
+            "Prioritize these Tier 1 opportunity types in order: new warehouse or distribution center opening, "
+            "facility expansion or added production capacity, geographic expansion, logistics/transportation/"
+            "supply-chain hiring, and new manufacturing/customer/supply contracts. Specific logistics hiring "
+            "is a strong timing signal; generic hiring is not. Use cautious language and never claim verified intent.\n\n"
             f"Title: {title}\nURL: {url}\nSource text:\n{text}"
         ),
     }

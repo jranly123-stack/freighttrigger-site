@@ -95,13 +95,15 @@ def main() -> None:
         )
     rows.sort(key=lambda row: int(row.get("urgency") or 0), reverse=True)
     today = date.today().isoformat()
-    path = REPORT_DIR / f"freighttrigger-weekly-feed-{today}.md"
+    path = REPORT_DIR / f"freighttrigger-opportunity-queue-{today}.md"
     lines = [
-        f"# FreightTrigger Weekly Signal Feed - {today}",
+        f"# FreightTrigger Weekly Opportunity Queue - {today}",
         "",
-        "Coverage: Food/bev + reefer-adjacent shipper signals",
+        "Coverage: Food/bev + reefer-adjacent logistics opportunities",
         "",
-        "FreightTrigger provides sales intelligence only. This report does not claim verified buyer intent.",
+        "Each record converts observed business change into freight interpretation, buyer-path logic, and a suggested next action.",
+        "",
+        "FreightTrigger provides sales intelligence only. This report does not claim verified buyer intent, guaranteed need, or transportation authority.",
         "",
     ]
     for index, row in enumerate(rows[:25], 1):
@@ -114,7 +116,7 @@ def main() -> None:
                 f"Urgency: {row['urgency']}/100",
                 f"Confidence: {row['confidence']}/100",
                 "",
-                "Required record:",
+                "Opportunity record:",
                 "",
                 f"Company: {row['company']}",
                 f"Trigger / change event: {row['trigger']}",

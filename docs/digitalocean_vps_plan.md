@@ -54,7 +54,7 @@ The VPS improves:
 
 Vercel:
 - public site
-- sample feed
+- sample queue
 - Stripe webhook
 - internal dashboard
 - protected control routes
@@ -191,4 +191,3 @@ Do not add VPS yet if:
 - reply loop is untested
 - no qualified records pass contact gates
 - the main bottleneck is offer quality rather than infrastructure
-

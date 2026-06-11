@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Enrich shipper signal records with public contact paths.
+"""Enrich opportunity records with public contact paths.
 
 This does not invent direct contacts. It appends public contact pages, visible
 emails, visible phone numbers, and search paths into Score notes for weekly

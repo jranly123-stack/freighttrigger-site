@@ -243,7 +243,7 @@ def main() -> None:
         if gate_reason:
             skipped[gate_reason] = skipped.get(gate_reason, 0) + 1
             continue
-        subject = str(fields.get("Email Subject") or "Food/bev freight demand signals")
+        subject = str(fields.get("Email Subject") or "Food/bev logistics opportunity queue")
         body = str(fields.get("Message") or "")
         if args.dry_run:
             company = str(prospect_fields.get("Company Name") or "Unknown company")

@@ -1,12 +1,12 @@
-# Sample Monday FreightTrigger Demand Signal Feed
+# Sample Monday FreightTrigger Opportunity Queue
 
-Subject: FreightTrigger Monday Signal Feed - 2026-06-08
+Subject: FreightTrigger Monday Opportunity Queue - 2026-06-08
 
 Period: 2026-06-01 to 2026-06-08
 
-Coverage: food/bev, reefer, and cold-chain-adjacent early-warning freight demand signals for this sales week.
+Coverage: food/bev, reefer, and cold-chain-adjacent logistics opportunities for this sales week.
 
-Use this feed to prioritize prospecting before accounts become obvious. This is sales intelligence, not verified buyer intent. Each record separates observed evidence from inferred freight need.
+Use this queue to prioritize prospecting before accounts become obvious. This is sales intelligence, not verified buyer intent. Each record separates observed evidence from inferred freight need.
 
 ## How To Use This Week
 
@@ -16,7 +16,7 @@ Use this feed to prioritize prospecting before accounts become obvious. This is 
 4. Use the contact path to route the first touch.
 5. Mark bad fits quickly so future scoring improves.
 
-## Signal 1
+## Opportunity 1
 
 Company: Mid-South Produce Distribution Group
 
@@ -48,7 +48,7 @@ Lead with the distribution-capacity change and ask whether their first operating
 Suggested opener:
 Saw a recent distribution-capacity signal tied to your regional produce operation. During ramp periods, teams often review backup reefer coverage before routing pressure shows up. Worth comparing coverage on a few lanes this week?
 
-## Signal 2
+## Opportunity 2
 
 Company: Great Lakes Frozen Foods Manufacturer
 
@@ -80,7 +80,7 @@ Lead with production/outbound planning, not generic reefer capacity.
 Suggested opener:
 Noticed a cold-chain operating signal that may affect outbound planning. When frozen-food teams adjust production or distribution cadence, lane reliability tends to get reviewed before misses show up. Worth a quick backup coverage check?
 
-## Signal 3
+## Opportunity 3
 
 Company: Regional Beverage Distributor
 
@@ -114,7 +114,7 @@ Saw a regional distribution signal that may affect beverage replenishment and ro
 
 ## Client Notes
 
-- The paid feed includes full source links and contact routes.
+- The paid queue includes full source links and contact routes.
 - FreightTrigger does not claim verified buyer intent.
 - FreightTrigger does not broker freight, arrange transportation, select carriers, handle loads, manage shipments, process contracts, store shipping documents, manage invoices, or move payments between shippers and carriers.
 - Reply feedback, bad fits, booked conversations, and client notes improve future scoring.

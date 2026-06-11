@@ -161,7 +161,7 @@ def message_date(value: str) -> str:
 
 
 def sent_outreach(token: str) -> list[Message]:
-    refs = list_messages(token, 'in:sent newer_than:30d ("Food/bev shipper timing signals" OR "Food/bev freight demand signals" OR "FreightTrigger")', 50)
+    refs = list_messages(token, 'in:sent newer_than:30d ("Food/bev shipper timing signals" OR "Food/bev freight demand signals" OR "Food/bev logistics opportunity queue" OR "FreightTrigger")', 50)
     messages: list[Message] = []
     for ref in refs:
         message = get_message(token, ref["id"])
@@ -171,6 +171,7 @@ def sent_outreach(token: str) -> list[Message]:
             "freighttrigger" not in haystack
             and "shipper timing" not in subject.lower()
             and "freight demand" not in subject.lower()
+            and "logistics opportunity" not in subject.lower()
         ):
             continue
         for to in extract_recipients(header(message, "To")):

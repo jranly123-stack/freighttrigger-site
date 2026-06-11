@@ -22,13 +22,13 @@
    access is verified, even while cold outbound remains paused.
 
 5. Checkout
-   Stripe checkout sells the Beta FreightTrigger Signal Feed at $497/month.
+   Stripe checkout sells the Beta FreightTrigger Opportunity Queue at $497/month.
 
 6. Immediate fulfillment
-   A new buyer receives the current signal feed immediately after checkout. They do not wait until Monday.
+   A new buyer receives the current opportunity queue immediately after checkout. They do not wait until Monday.
 
 7. Weekly fulfillment
-   Active clients receive the Monday signal feed every Monday morning Eastern.
+   Active clients receive the Monday opportunity queue every Monday morning Eastern.
 
 8. Feedback learning
    Replies, objections, bounces, purchases, renewals, and client feedback are stored so future targeting, scoring, and outreach improve.
@@ -36,11 +36,12 @@
 ## Positioning Logic
 
 FreightTrigger is not a lead list. A lead list tells a rep who might ship.
-FreightTrigger tells a rep where timing may have changed.
+FreightTrigger tells a rep where timing may have changed and why that change may
+create a logistics conversation.
 
 The operating model is:
 
-`company event -> possible freight demand -> evidence review -> freight interpretation -> buyer path -> outreach angle -> conversion learning`
+`business change -> evidence review -> logistics interpretation -> opportunity priority -> buyer path -> outreach angle -> conversion learning`
 
 The strategic asset is not the page or dashboard. It is the growing record of
 which events, source types, verticals, buyer roles, and outreach angles produce
@@ -49,7 +50,7 @@ replies, checkouts, renewals, and client feedback.
 ## Tool Correlation
 
 DataForSEO:
-Radar layer. Finds buyer prospects, source pages, market pages, and shipper-signal pages through search.
+Radar layer. Finds buyer prospects, source pages, market pages, and shipper-opportunity pages through search.
 
 SerpAPI:
 Backup radar layer. Used when DataForSEO is unavailable or returns no usable result.
@@ -58,7 +59,7 @@ Firecrawl:
 Extraction layer. Converts source URLs into readable page text so the system can score evidence instead of guessing from titles.
 
 OpenAI:
-Interpretation layer. Scores buyer fit, shipper trigger relevance, freight hypothesis, urgency, confidence, outreach positioning, and reply intent.
+Interpretation layer. Scores buyer fit, business-change relevance, freight hypothesis, opportunity priority, urgency, confidence, outreach positioning, and reply intent.
 
 Airtable:
 System memory. Stores companies, signals, scores, broker prospects, outreach, replies, clients, reports, and suppression records.
@@ -71,6 +72,21 @@ Conversion layer. Converts interested prospects into paid subscriptions and trig
 
 Clay:
 Enrichment layer. Improves company/contact intelligence after a target is identified. It is not the radar and not the system memory.
+
+Apollo:
+Direct-contact layer. Used internally for FreightTrigger's own buyer acquisition when public discovery produces generic inboxes or weak role coverage. It should improve named decision-maker coverage, not become raw data resold to customers.
+
+ZeroBounce or NeverBounce:
+Verification layer. Validates emails before scaled sending so bounce risk does not damage the domain or distort conversion learning.
+
+RocketReach or Lusha:
+Gap-fill contact layer. Used when Apollo/Clay coverage is weak, especially for phone numbers and hard-to-reach owner, sales, logistics, operations, or supply-chain contacts.
+
+LinkedIn Sales Navigator:
+Role-validation layer. Confirms buyer roles, company fit, headcount, territory, and seniority. It is targeting intelligence, not the automation backbone.
+
+Twilio:
+Phone infrastructure layer. Used later for alias numbers, inbound call routing, voicemail, call transcripts, and AI-assisted phone workflows after the contact and email loop is stable.
 
 Vercel:
 Internal operator app and protected API endpoints.
@@ -89,7 +105,7 @@ delivery.
 All times are Eastern.
 
 9:00 AM:
-Signal scan. Find food/bev, reefer, and cold-chain-adjacent shipper change signals.
+Opportunity scan. Find food/bev, reefer, and cold-chain-adjacent business changes that may create logistics conversations.
 
 9:15 AM:
 Buyer acquisition. Find and score broker/3PL/provider prospects.
@@ -128,7 +144,27 @@ Reply loop.
 Final controlled outreach send window.
 
 Monday 10:00 AM:
-Weekly paid-client signal feed delivery.
+Weekly paid-client opportunity queue delivery.
+
+## Opportunity Record Standard
+
+Every paid record should answer:
+
+- Company
+- Trigger / change event
+- Evidence URL
+- Evidence summary
+- Why it matters for freight
+- Likely freight need
+- Best-fit provider type
+- Buyer/contact path
+- Outreach angle
+- Urgency score
+- Confidence score
+- Next action
+
+Records that cannot answer these fields should be downgraded, routed to review,
+or excluded.
 
 ## Automation Status
 
@@ -163,21 +199,21 @@ approval.
 3. Review first DataForSEO-powered output quality in Airtable.
 4. Allow business-hour outreach only from qualified, non-suppressed prospects.
 5. Watch Gmail replies through reply loop.
-6. If Stripe checkout occurs, deliver current feed immediately.
-7. Send Monday feed to active clients at 10:00 AM when clients exist.
-8. After the day, inspect reply rate, bad-fit rate, contact quality, and source quality.
+6. If Stripe checkout occurs, deliver current opportunity queue immediately.
+7. Send Monday opportunity queue to active clients at 10:00 AM when clients exist.
+8. After the day, inspect reply rate, bad-fit rate, contact quality, source quality, sample clicks, Stripe clicks, and opportunity-record completeness.
 
 ## Scale Plan
 
 Stage 1: $0-$5k MRR
-Tighten food/bev + reefer feed quality, prove replies and first paid beta subscriptions.
+Tighten food/bev + reefer opportunity quality, prove replies and first paid beta subscriptions.
 
 Stage 2: $5k-$15k MRR
 Add Clay webhook enrichment, stronger source scoring, bounce tracking, and basic client preference fields.
 
-Add a small VPS worker layer when Gmail runtime, reply handling, and dry-run
-outreach quality are proven. The VPS should run the engine, not replace the
-website or dashboard.
+Expand the VPS worker after Gmail runtime, reply handling, and outreach quality
+are proven. The VPS runs the engine; it does not replace the website or
+dashboard.
 
 Stage 3: $15k-$50k MRR
 Create territory feeds, vertical feeds, stronger contact enrichment, subscription-tier delivery, and conversion benchmark fields.
@@ -186,7 +222,7 @@ Stage 4: $50k-$100k MRR
 Build client-facing dashboard only after the weekly feed has enough data and usage feedback to justify it.
 
 Stage 5: $100k+ MRR
-Move from reports to FreightTrigger API/feed infrastructure: verticalized signal feeds, CRM push, performance benchmarks, and proprietary trigger-conversion intelligence.
+Move from reports to FreightTrigger API/queue infrastructure: verticalized opportunity queues, CRM push, performance benchmarks, and proprietary trigger-conversion intelligence.
 
 ## Kill And Scale Triggers
 

@@ -1,10 +1,11 @@
-# FreightTrigger Static Site
+# FreightTrigger Site
 
-Static one-page website for `getfreighttrigger.com`.
+Public FreightTrigger website for `getfreighttrigger.com`.
 
 ## Files
 
 - `index.html` - page content
+- `sample-feed.html` - public sample opportunity queue preview
 - `styles.css` - responsive styling
 
 ## Included Sections
@@ -12,7 +13,7 @@ Static one-page website for `getfreighttrigger.com`.
 - Hero and business positioning
 - What FreightTrigger does
 - Customer deliverables
-- Sample feed preview
+- Sample opportunity queue preview
 - Beta and custom pricing tiers
 - Compliance disclaimer
 - Subscription, refund, privacy, and no-guarantee policies
@@ -47,4 +48,4 @@ Update `index.html` if the public contact details change.
 
 ## Notes
 
-No API keys, backend code, email automation, or SaaS dashboard are included in this site. The Gmail API, OpenAI API, Firecrawl, SerpAPI, Airtable, and SAM.gov integrations are part of the later operating engine, not this static website.
+No API keys or secrets are included in the public site. The operating engine, dashboard, Gmail automation, Airtable memory, DataForSEO, Firecrawl, OpenAI, and related integrations run through the internal ops layer.

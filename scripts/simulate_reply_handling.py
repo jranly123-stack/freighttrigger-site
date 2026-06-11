@@ -64,18 +64,18 @@ def build_needs_info_reply(email: str) -> str:
         [
             "Good question.",
             "",
-            "FreightTrigger is an early-warning freight demand feed for logistics sales teams. It is built to answer: what company event happened, why it may create freight demand, who should your team contact, and what first touch should say.",
+            "FreightTrigger is a logistics opportunity queue for sales teams. It is built to answer: what business change happened, why it may matter for freight, who should your team contact, and what first touch should say.",
             "",
             "Preview:",
             link_with_context(SAMPLE_URL, "Needs Info", email),
             "",
-            "The preview shows the structure. The paid beta feed includes current account records, source context, freight read, contact route, scoring notes, and sales positioning.",
+            "The preview shows the structure. The paid beta queue includes current opportunity records, source context, freight read, contact route, scoring notes, and sales positioning.",
             "",
             "Current beta:",
-            "$497/month. Checkout delivers the current feed immediately, then Monday updates continue each week:",
+            "$497/month. Checkout delivers the current queue immediately, then Monday updates continue each week:",
             link_with_context(CHECKOUT_URL, "Needs Info", email),
             "",
-            "If you want a direct answer before checkout, reply with the specific lane, region, or customer type your team sells into and I will tell you whether the beta feed fits.",
+            "If you want a direct answer before checkout, reply with the specific lane, region, or customer type your team sells into and I will tell you whether the beta queue fits.",
             "",
             "FreightTrigger provides sales intelligence only. We do not broker freight, arrange transportation, select carriers, handle loads, manage shipments, process contracts, store shipping documents, manage invoices, or move payments between shippers and carriers.",
         ]
@@ -124,7 +124,7 @@ def conversion_block(gmail_id: str, email: str, intent: str, subject: str, body:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--email", default="buyer@example-logistics.com")
-    parser.add_argument("--subject", default="Re: Food/bev freight demand signals")
+    parser.add_argument("--subject", default="Re: Food/bev logistics opportunity queue")
     parser.add_argument(
         "--body",
         default="Can you send more info? What does the paid feed include and how much is it?",

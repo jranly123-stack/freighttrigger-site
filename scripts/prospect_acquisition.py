@@ -25,14 +25,14 @@ STRIPE_URL = "https://buy.stripe.com/14A8wO6R4df565JbjYfAc00"
 PUBLIC_SITE_URL = "https://getfreighttrigger.com"
 
 QUERIES = [
-    "food beverage reefer freight broker contact",
-    "refrigerated freight broker food beverage logistics contact",
-    "food beverage 3PL refrigerated logistics contact",
-    "reefer FTL broker food shippers contact",
-    "cold chain logistics broker food beverage contact",
-    "food beverage freight broker contact us inurl:contact",
-    "reefer logistics 3PL contact us food beverage",
-    "temperature controlled freight broker contact us",
+    "food beverage freight broker logistics sales director contact",
+    "refrigerated freight broker transportation sales contact",
+    "food beverage 3PL supply chain logistics sales contact",
+    "reefer FTL broker food shippers sales contact",
+    "cold chain logistics provider sales director contact",
+    "food beverage freight broker owner operations contact",
+    "temperature controlled freight broker sales contact",
+    "regional 3PL food beverage logistics sales contact",
 ]
 
 NOISE_DOMAINS = (
@@ -197,12 +197,13 @@ def extract_emails(text: str, source_domain: str) -> list[str]:
 def classify_prospect(title: str, url: str, text: str, emails: list[str]) -> dict:
     prompt = (
         "You are FreightTrigger's prospect scoring agent. Score this company as a possible buyer "
-        "for a weekly food/bev + reefer shipper trigger intelligence feed. Return strict JSON with "
+        "for a weekly food/bev + reefer logistics opportunity intelligence queue. Return strict JSON with "
         "keys: include, company_name, buyer_type, target_vertical, fit_score, reason, personalization, "
         "email_subject.\n\n"
         "Rules: include true only for freight brokers, 3PLs, carriers, forwarders, warehousing, "
         "fulfillment, final-mile, or logistics sales organizations that could pay for shipper sales "
         "intelligence. Reject shippers, directories, media articles, load boards, job boards, and generic lists. "
+        "Prefer companies with reachable owner, sales, logistics, transportation, operations, or supply-chain leadership. "
         "fit_score must be 0-100. Do not say FreightTrigger handles freight.\n\n"
         f"Title: {title}\nURL: {url}\nCandidate emails: {', '.join(emails) or 'none'}\nSource text:\n{text[:6000]}"
     )
@@ -237,16 +238,16 @@ def outreach_body(company: str) -> str:
             "",
             "I found your team while mapping logistics providers that sell into food/bev, refrigerated, and time-sensitive freight.",
             "",
-            "FreightTrigger is an early-warning freight demand feed. It looks for company events that may create future logistics pressure before they become obvious to everyone calling the same shipper list.",
+            "FreightTrigger is a weekly logistics opportunity queue. It turns business-change data into a prioritized list of companies where a logistics conversation may be worth testing before the account shows up on another static shipper list.",
             "",
-            "Each record starts with a company event, then turns it into freight interpretation, buyer/contact path, and a first-touch angle.",
+            "Each record answers: what changed, why it may matter for freight, who to contact, and what angle to test.",
             "",
             "Preview:",
             SAMPLE_URL,
             "",
-            "The preview shows the shape of the record. The paid beta feed includes current accounts, source context, contact path, scoring notes, and outreach positioning.",
+            "The preview shows the shape of the record without exposing the current-week queue. The paid beta includes current accounts, source context, contact path, scoring notes, and outreach positioning.",
             "",
-            "Beta is $497/month. Checkout delivers the current feed immediately, then Monday updates continue each week:",
+            "Beta is $497/month. Checkout delivers the current queue immediately, then Monday updates continue each week:",
             STRIPE_URL,
             "",
             f"Website: {PUBLIC_SITE_URL}",
@@ -329,7 +330,7 @@ def main() -> None:
                 outreach_records.append(
                     {
                         "Email Subject": analysis.get("email_subject")
-                        or "Food/bev freight demand signals",
+                        or "Food/bev logistics opportunity queue",
                         "Message": outreach_body(analysis.get("company_name") or title[:80]),
                         "Status": "Queued" if contact_email else "Needs Contact",
                     }
